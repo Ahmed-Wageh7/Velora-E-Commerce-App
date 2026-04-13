@@ -1,0 +1,312 @@
+:host {
+  --gold: #ffffff;
+  --gold-light: #f3f3f3;
+  --text-dark: rgba(84, 77, 42, 0.693);
+  --text-muted: #848080;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+  background: transparent;
+}
+
+.art-section {
+  position: relative;
+  width: 100%;
+  padding: 16px 0 88px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.section-header {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 10px;
+  display: inline-block;
+  animation: fadeSlideDown 0.7s var(--ease-smooth) both;
+}
+
+.section-subtitle {
+  font-family: 'Lato', 'Helvetica Neue', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin: 0;
+  text-transform: uppercase;
+  animation: fadeSlideDown 0.7s var(--ease-smooth) 0.12s both;
+}
+
+.art-grid {
+  width: min(var(--app-layout-max-width), 85vw, calc(100% - 48px));
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 52px 28px;
+  background: transparent;
+}
+
+.art-card {
+  position: relative;
+  width: calc((100% - 84px) / 4);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  animation: cardEntrance 0.6s var(--ease-spring) both;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+
+.art-card:hover {
+  transform: translateY(-8px);
+}
+
+.art-card-image-wrap {
+  position: relative;
+  height: 280px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.art-card-image-wrap::after {
+  content: '';
+  position: absolute;
+  top: -12%;
+  bottom: -12%;
+  left: -42%;
+  width: 30%;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.art-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  transition:
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+
+.art-card-image-primary {
+  opacity: 1;
+  z-index: 1;
+}
+
+.art-card-image-hover {
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.art-card:hover .art-card-image-wrap::after {
+  animation: art-card-shimmer var(--shimmer-duration) ease forwards;
+}
+
+.art-card:hover .art-card-image-wrap.has-hover-image .art-card-image-primary,
+.art-card:focus-within .art-card-image-wrap.has-hover-image .art-card-image-primary {
+  opacity: 0;
+}
+
+.art-card:hover .art-card-image-wrap.has-hover-image .art-card-image-hover,
+.art-card:focus-within .art-card-image-wrap.has-hover-image .art-card-image-hover {
+  opacity: 1;
+}
+
+.art-card:hover .art-card-image {
+  transform: scale(1.1);
+}
+
+.art-card-name {
+  margin: 0 0 4px;
+  color: #9a845d;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Helvetica Neue', 'Arial', sans-serif;
+  line-height: 1.35;
+  text-transform: none;
+  text-align: center;
+  letter-spacing: 0.01em;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.art-card-subtitle {
+  margin: 0 0 6px;
+  color: #a89d86;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  min-height: 13px;
+}
+
+.art-card-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  min-height: 24px;
+}
+
+.art-card-current {
+  color: #2f4c8a;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+
+.art-card-original {
+  color: #d0c7b6;
+  font-size: 12px;
+  text-decoration: line-through;
+}
+
+.art-card-button {
+  width: 100%;
+  height: 42px;
+  margin-top: auto;
+  margin-left: auto;
+  margin-right: auto;
+  border: 2px solid #bdb6a8;
+  background: #fff;
+  color: #767676;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 0;
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    opacity 0.35s ease;
+}
+
+.art-card:hover .art-card-button {
+  transform: translateY(-1px);
+}
+
+.art-card-button-disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@keyframes art-card-shimmer {
+  0% {
+    left: -42%;
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 118%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .art-grid {
+    width: min(calc(var(--app-layout-max-width) - 30px), 90vw, calc(100% - 40px));
+    gap: 40px 24px;
+  }
+
+  .art-card {
+    width: calc((100% - 24px) / 2);
+  }
+
+  .art-card-image-wrap {
+    height: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .art-grid {
+    width: min(100% - 32px, 720px);
+    gap: 32px 20px;
+  }
+
+  .art-card-image-wrap {
+    height: 220px;
+  }
+}
+
+@media (max-width: 520px) {
+  .art-grid {
+    gap: 28px 16px;
+  }
+
+  .art-card {
+    width: calc((100% - 16px) / 2);
+  }
+
+  .art-card-image-wrap {
+    height: 200px;
+  }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

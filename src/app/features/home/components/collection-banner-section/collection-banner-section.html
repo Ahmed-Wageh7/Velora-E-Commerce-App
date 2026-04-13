@@ -1,0 +1,84 @@
+<section class="collection-banner-section">
+  @if (bannerRoute()) {
+    <a class="collection-banner-wrap" [routerLink]="bannerRoute()" [attr.aria-label]="title() || bannerAlt()">
+      <img [src]="bannerImage()" [alt]="bannerAlt()" class="collection-banner-image" loading="lazy" />
+    </a>
+  } @else {
+    <div class="collection-banner-wrap">
+      <img [src]="bannerImage()" [alt]="bannerAlt()" class="collection-banner-image" loading="lazy" />
+    </div>
+  }
+
+  @if (hasTitle()) {
+    <div class="section-header">
+      <h2 class="section-title">{{ title() }}</h2>
+      <div class="title-underline"></div>
+    </div>
+  }
+
+  @if (productsState().status === 'loading') {
+    <div class="loading-panel">
+      <span class="loading-panel-spinner" aria-hidden="true"></span>
+      <span>{{ productsState().message }}</span>
+    </div>
+  } @else if (productsState().status === 'error') {
+    <div class="status-panel" role="status">
+      <h2>Collection unavailable</h2>
+      <p>{{ productsState().message }}</p>
+    </div>
+  } @else if (productsState().status === 'empty') {
+    <div class="status-panel" role="status">
+      <h2>No products yet</h2>
+      <p>{{ productsState().message }}</p>
+    </div>
+  } @else {
+    <div class="collection-products-grid">
+      @for (product of visibleProducts(); track trackById($index, product)) {
+        <article class="collection-product-card">
+          <a class="product-card-link" [routerLink]="['/product', detailsFolder(), product.id]">
+            <div class="collection-product-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
+              <img
+                [src]="product.primaryImageUrl"
+                [alt]="product.primaryImageAlt"
+                class="collection-product-image collection-product-image-primary media-hover-image"
+                [class.collection-product-image--fill]="uniformImageFill()"
+                loading="lazy"
+              />
+              @if (product.coverImageUrl) {
+                <img
+                  [src]="product.coverImageUrl"
+                  [alt]="product.hoverImageAlt"
+                  class="collection-product-image collection-product-image-hover media-hover-image"
+                  [class.collection-product-image--fill]="uniformImageFill()"
+                  loading="lazy"
+                />
+              }
+            </div>
+            <h3 class="collection-product-name">{{ product.name }}</h3>
+            <div class="collection-product-price">
+              <span class="collection-product-current">{{ formatPrice(product.price) }}</span>
+            </div>
+          </a>
+
+          <button
+            class="collection-product-button action-button"
+            type="button"
+            [class.collection-product-button-disabled]="product.quantity <= 0"
+            [class.is-loading]="isAddingToCart(product.id)"
+            [disabled]="product.quantity <= 0 || isAddingToCart(product.id)"
+            (click)="addToCart(product, $event)"
+          >
+            <span class="action-button-label">
+              @if (isAddingToCart(product.id)) {
+                <span class="action-button-spinner" aria-hidden="true"></span>
+                <span>Loading...</span>
+              } @else {
+                <span>{{ getButtonLabel(product) }}</span>
+              }
+            </span>
+          </button>
+        </article>
+      }
+    </div>
+  }
+</section>

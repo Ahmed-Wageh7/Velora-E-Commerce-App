@@ -1,0 +1,12 @@
+<app-site-navbar />
+
+<section class="hero-section" aria-label="Featured Veloura banners">
+  <div class="hero-slides" aria-live="polite">
+    @for (slide of slides; track slide.desktopSrc; let index = $index) {
+    <picture class="hero-slide" [class.active]="currentSlide() === index">
+      <source [srcset]="slide.desktopSrc" media="(min-width: 768px)" />
+      <img [src]="slide.mobileSrc" [alt]="slide.alt" loading="eager" />
+    </picture>
+    }
+  </div>
+</section>

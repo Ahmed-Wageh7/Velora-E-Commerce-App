@@ -1,0 +1,67 @@
+<section class="fragrances-section">
+  <div class="section-header">
+    <h2 class="section-title">Fragrances That Refuse to Fade</h2>
+    <div class="title-underline"></div>
+  </div>
+
+  @if (fragrancesState().status === 'loading') {
+    <div class="loading-panel">
+      <span class="loading-panel-spinner" aria-hidden="true"></span>
+      <span>{{ fragrancesState().message }}</span>
+    </div>
+  } @else if (fragrancesState().status === 'error') {
+    <div class="status-panel" role="status">
+      <h2>Fragrances unavailable</h2>
+      <p>{{ fragrancesState().message }}</p>
+    </div>
+  } @else if (fragrancesState().status === 'empty') {
+    <div class="status-panel" role="status">
+      <h2>No products yet</h2>
+      <p>{{ fragrancesState().message }}</p>
+    </div>
+  } @else {
+    <div class="fragrances-grid">
+      @for (product of fragrancesState().data; track trackById($index, product)) {
+        <article class="fragrance-card">
+          <a class="product-card-link" [routerLink]="['/product', detailsFolder, product.id]">
+            <div class="fragrance-card-image-wrap media-hover-frame">
+              <img
+                [src]="product.imageUrl"
+                [alt]="product.name"
+                class="fragrance-card-image media-hover-image"
+                loading="lazy"
+              />
+            </div>
+            <h3 class="fragrance-card-name">{{ product.name }}</h3>
+            @if (product.detail) {
+              <p class="fragrance-card-subtitle">{{ product.detail }}</p>
+            }
+            @if (product.badge) {
+              <p class="fragrance-card-subtitle fragrance-card-badge">{{ product.badge }}</p>
+            }
+            <div class="fragrance-card-price">
+              <span class="fragrance-card-current">{{ formatPrice(product.price) }}</span>
+            </div>
+          </a>
+          <button
+            class="fragrance-card-button action-button"
+            type="button"
+            [class.fragrance-card-button-disabled]="product.quantity <= 0"
+            [class.is-loading]="isAddingToCart(product.id)"
+            [disabled]="product.quantity <= 0 || isAddingToCart(product.id)"
+            (click)="addToCart(product, $event)"
+          >
+            <span class="action-button-label">
+              @if (isAddingToCart(product.id)) {
+                <span class="action-button-spinner" aria-hidden="true"></span>
+                <span>Loading...</span>
+              } @else {
+                <span>{{ getButtonLabel(product) }}</span>
+              }
+            </span>
+          </button>
+        </article>
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "name": "Aurora Lounge Lamp",
+    "price": 149,
+    "description": "A sculptural brushed-steel lamp with a warm ambient glow, designed to soften corners and add calm character to modern living spaces.",
+    "image": "/products/aurora-lamp.svg"
+  },
+  {
+    "id": 2,
+    "name": "Marin Everyday Tote",
+    "price": 89,
+    "description": "A structured canvas tote with leather handles and generous interior room for work essentials, travel kits, and day-to-day carry.",
+    "image": "/products/marin-tote.svg"
+  },
+  {
+    "id": 3,
+    "name": "Solstice Ceramic Set",
+    "price": 112,
+    "description": "A hand-finished ceramic dining set with a matte sand glaze and subtle tonal variation, built for elevated everyday meals.",
+    "image": "/products/solstice-ceramic.svg"
+  },
+  {
+    "id": 4,
+    "name": "Cinder Knit Throw",
+    "price": 74,
+    "description": "A soft heavyweight throw in textured charcoal knit, ideal for layering over lounge chairs, sofas, or end-of-bed styling.",
+    "image": "/products/cinder-throw.svg"
+  },
+  {
+    "id": 5,
+    "name": "Atlas Travel Flask",
+    "price": 58,
+    "description": "A double-wall stainless flask with powder-coated finish and precision sip top, made to keep drinks at the perfect temperature longer.",
+    "image": "/products/atlas-flask.svg"
+  },
+  {
+    "id": 6,
+    "name": "Vale Accent Chair",
+    "price": 329,
+    "description": "A compact accent chair with curved walnut arms and cloud-soft boucle upholstery, blending comfort with gallery-inspired form.",
+    "image": "/products/vale-chair.svg"
+  }
+]

@@ -1,0 +1,349 @@
+:host {
+  display: block;
+  background: #fff;
+  color: #8f7c56;
+  min-height: 100vh;
+}
+
+.care-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.care-container {
+  width: min(var(--app-layout-max-width), calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.care-main {
+  flex: 1;
+  min-height: 0;
+  padding: 18px 0 72px;
+}
+
+.care-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #b3a485;
+}
+
+.care-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumb-separator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: #b3a485;
+}
+
+.breadcrumb-separator svg {
+  width: 100%;
+  height: 100%;
+}
+
+.care-heading-row {
+  margin-top: 36px;
+  margin-bottom: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.care-title {
+  margin: 0;
+  color: #7e6c4b;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.care-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #9a8863;
+  font-size: 14px;
+}
+
+.sort-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.care-sort-select {
+  min-width: 142px;
+  height: 36px;
+  border: 1px solid #e8e2d6;
+  border-radius: 6px;
+  padding: 0 36px 0 12px;
+  background: #fff;
+  color: #9a8863;
+  font-size: 14px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.sort-select-icon {
+  position: absolute;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  color: #b3a485;
+  pointer-events: none;
+}
+
+.sort-select-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.care-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 300px));
+  gap: 28px 12px;
+  align-items: start;
+  justify-items: start;
+}
+
+.care-card {
+  position: relative;
+  width: min(100%, 220px);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(0);
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+
+.care-card-image-wrap {
+  position: relative;
+  height: 230px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.care-card-image-wrap::after {
+  content: '';
+  position: absolute;
+  top: -12%;
+  bottom: -12%;
+  left: -42%;
+  width: 30%;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.care-card:hover .care-card-image-wrap::after {
+  animation: care-card-shimmer var(--shimmer-duration) ease forwards;
+}
+
+.care-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  transition:
+    opacity 0.75s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.75s ease;
+}
+
+.care-card-image-primary {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.care-card-image-hover {
+  opacity: 0;
+  transform: translateY(10px) scale(1.02);
+}
+
+.care-card:hover .care-card-image-wrap.has-hover-image .care-card-image-primary,
+.care-card:focus-within .care-card-image-wrap.has-hover-image .care-card-image-primary {
+  opacity: 0;
+  transform: translateY(-10px) scale(1.02);
+}
+
+.care-card:hover .care-card-image-wrap.has-hover-image .care-card-image-hover,
+.care-card:focus-within .care-card-image-wrap.has-hover-image .care-card-image-hover {
+  opacity: 1;
+  transform: translateY(0) scale(1.1);
+}
+
+.care-card-name {
+  margin: 0 0 8px;
+  color: #9a845d;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Helvetica Neue', 'Arial', sans-serif;
+  line-height: 1.45;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.care-card-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.care-card-current {
+  color: #18336f;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.care-card-original {
+  color: #d0c7b6;
+  font-size: 14px;
+  text-decoration: line-through;
+}
+
+.care-card-button {
+  width: min(100%, 220px);
+  height: 35px;
+  border: 2px solid #bdb6a8;
+  background: #fff;
+  color: #767676;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 0;
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    opacity 0.35s ease;
+}
+
+.care-card:hover .care-card-button {
+  transform: translateY(-1px);
+}
+
+@keyframes care-card-shimmer {
+  0% {
+    left: -42%;
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 118%;
+    opacity: 0;
+  }
+}
+
+.care-card-button-disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.care-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 44px;
+}
+
+.care-load-more-button {
+  min-width: 180px;
+  height: 42px;
+  border: 2px solid #bdb6a8;
+  background: #fff;
+  color: #767676;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease;
+}
+
+.care-load-more-button:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1024px) {
+  .care-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px 28px;
+    justify-items: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .care-container {
+    width: min(100% - 32px, var(--app-layout-max-width));
+  }
+
+  .care-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .care-heading-row {
+    margin-bottom: 40px;
+  }
+
+  .care-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+    justify-items: stretch;
+  }
+
+  .care-card {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 580px) {
+  .care-grid {
+    grid-template-columns: 1fr;
+  }
+}

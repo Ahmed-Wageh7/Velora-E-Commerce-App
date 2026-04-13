@@ -1,0 +1,150 @@
+<div class="checkout-page">
+  <app-site-navbar />
+
+  <main class="checkout-main">
+    <section class="checkout-shell">
+      <div class="checkout-layout" [class.checkout-layout--empty]="!cartItems().length">
+        <div id="cart" class="checkout-items">
+          @if (cartItems().length) {
+          <!-- <div class="checkout-list-head">
+              <span>{{ itemCount() }} item{{ itemCount() === 1 ? '' : 's' }}</span>
+              <span>Manage your quantities below</span>
+            </div> -->
+
+          @for (item of cartItems(); track item.id) {
+          <article class="checkout-card">
+            <button
+              type="button"
+              class="action-button checkout-remove checkout-remove-top"
+              [class.is-loading]="isProcessingItem(item.id, 'remove')"
+              [disabled]="isProcessingItem(item.id, 'remove')"
+              (click)="remove(item.id)"
+              aria-label="Remove item"
+            >
+              <span class="action-button-label">
+                @if (isProcessingItem(item.id, 'remove')) {
+                <span class="action-button-spinner" aria-hidden="true"></span>
+                } @else {
+                <span>×</span>
+                }
+              </span>
+            </button>
+
+            <div class="checkout-card-main">
+              <a
+                class="checkout-card-media media-hover-frame"
+                [routerLink]="getProductRoute(item)"
+                (click)="openProductDetails(item, $event)"
+                [attr.aria-label]="'Open ' + item.name"
+              >
+                <img
+                  [src]="item.image"
+                  [alt]="item.name"
+                  class="checkout-card-image media-hover-image"
+                />
+              </a>
+
+              <div class="checkout-card-copy">
+                <h2 class="checkout-card-title">{{ item.name }}</h2>
+                <div class="checkout-card-prices">
+                  <span class="checkout-card-current"
+                    >{{ item.price | currency: 'USD' : 'symbol' : '1.0-0' }}</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="checkout-card-actions">
+              <div class="quantity-chip">
+                <button
+                  type="button"
+                  class="action-button quantity-chip-button"
+                  [class.quantity-chip-button--busy]="isProcessingItem(item.id, 'decrease')"
+                  [disabled]="isProcessingItem(item.id, 'decrease')"
+                  (click)="decrease(item.id)"
+                >
+                  @if (isProcessingItem(item.id, 'decrease')) {
+                  <span class="action-button-spinner inline-block" aria-hidden="true"></span>
+                  } @else {
+                  <span>−</span>
+                  }
+                </button>
+
+                <span class="quantity-chip-value">{{ item.quantity }}</span>
+
+                <button
+                  type="button"
+                  class="action-button quantity-chip-button"
+                  [class.quantity-chip-button--busy]="isProcessingItem(item.id, 'increase')"
+                  [disabled]="isProcessingItem(item.id, 'increase')"
+                  (click)="increase(item.id)"
+                >
+                  @if (isProcessingItem(item.id, 'increase')) {
+                  <span class="action-button-spinner inline-block" aria-hidden="true"></span>
+                  } @else {
+                  <span>+</span>
+                  }
+                </button>
+              </div>
+
+              <div class="checkout-card-total">
+                <span>Total:</span>
+                <strong
+                  >{{ item.price * item.quantity | currency: 'USD' : 'symbol' : '1.0-0' }}</strong
+                >
+              </div>
+            </div>
+          </article>
+          } } @else {
+          <div class="checkout-empty">
+            <span class="checkout-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M7 8V7a5 5 0 0 1 10 0v1h2a1 1 0 0 1 1 .94l1 11A2 2 0 0 1 19.01 22H4.99a2 2 0 0 1-1.99-2.06l1-11A1 1 0 0 1 5 8zm2 0h6V7a3 3 0 0 0-6 0z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            <h2>Empty Cart</h2>
+            <a routerLink="/" class="checkout-empty-link">Back home</a>
+          </div>
+          }
+        </div>
+
+        @if (cartItems().length) {
+        <aside id="summary" class="checkout-summary">
+          <p class="checkout-summary-kicker">Order Summary</p>
+
+          <div class="checkout-summary-block">
+            <div class="summary-row">
+              <span>Total items amount</span>
+              <span>{{ subtotal() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            </div>
+          </div>
+
+          <div class="checkout-summary-block checkout-summary-block--final">
+            <div class="summary-row">
+              <span>Final total amount</span>
+              <span>{{ total() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            </div>
+            <p class="checkout-vat">* VAT Inclusive</p>
+          </div>
+
+          <button
+            type="button"
+            class="action-button checkout-confirm"
+            [class.is-loading]="false"
+            [disabled]="false"
+            (click)="confirmPurchase()"
+          >
+            <span class="action-button-label">
+              <span>Submit order</span>
+            </span>
+          </button>
+        </aside>
+        }
+      </div>
+    </section>
+  </main>
+
+</div>

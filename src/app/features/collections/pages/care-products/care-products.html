@@ -1,0 +1,124 @@
+<div class="care-page">
+  <app-site-navbar />
+
+  <main class="care-main">
+    <div class="care-container">
+      <nav class="care-breadcrumb" aria-label="Breadcrumb">
+        <a routerLink="/">Home</a>
+        <span class="breadcrumb-separator" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span>Care products</span>
+      </nav>
+
+      <div class="care-heading-row">
+        <h1 class="care-title">Care products</h1>
+
+        <label class="care-sort">
+          <span>Sort By</span>
+          <span class="sort-select-wrap">
+            <select class="care-sort-select" [value]="selectedSort" (change)="updateSort($any($event.target).value)">
+            @for (option of sortOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+            }
+            </select>
+            <span class="sort-select-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </span>
+          </span>
+        </label>
+      </div>
+
+      @if (careProductsState().status === 'loading') {
+      <div class="loading-panel">
+        <span class="loading-panel-spinner" aria-hidden="true"></span>
+        <span>{{ careProductsState().message }}</span>
+      </div>
+      } @else if (careProductsState().status === 'error') {
+      <div class="status-panel" role="status">
+        <h2>Care products unavailable</h2>
+        <p>{{ careProductsState().message }}</p>
+      </div>
+      } @else if (careProductsState().status === 'empty') {
+      <div class="status-panel" role="status">
+        <h2>No products yet</h2>
+        <p>{{ careProductsState().message }}</p>
+      </div>
+      } @else {
+      <section class="care-grid" aria-label="Care products list">
+        @for (product of getVisibleProducts(careProductsState().data); track trackByName($index, product)) {
+        <article class="care-card">
+          <a class="product-card-link" [routerLink]="['/product', detailsFolder, product.id]">
+            <div class="care-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
+              <img
+                class="care-card-image care-card-image-primary media-hover-image"
+                [src]="product.primaryImageUrl"
+                [alt]="product.primaryImageAlt"
+                loading="lazy"
+              />
+              @if (product.coverImageUrl) {
+                <img
+                  class="care-card-image care-card-image-hover media-hover-image"
+                  [src]="product.hoverImageUrl"
+                  [alt]="product.hoverImageAlt"
+                  loading="lazy"
+                />
+              }
+            </div>
+
+            <h2 class="care-card-name">{{ product.name }}</h2>
+
+            <div class="care-card-price">
+              <span class="care-card-current">{{ formatPrice(product.price) }}</span>
+            </div>
+          </a>
+
+          <button
+            class="care-card-button action-button"
+            type="button"
+            [class.care-card-button-disabled]="product.quantity <= 0"
+            [class.is-loading]="isAddingToCart(product.id)"
+            [disabled]="product.quantity <= 0 || isAddingToCart(product.id)"
+            (click)="addToCart(product, $event)"
+          >
+            <span class="action-button-label">
+              @if (isAddingToCart(product.id)) {
+              <span class="action-button-spinner" aria-hidden="true"></span>
+              <span>Loading...</span>
+              } @else {
+              <span>{{ getButtonLabel(product) }}</span>
+              }
+            </span>
+          </button>
+        </article>
+        }
+      </section>
+
+      @if (canShowMore(careProductsState().data)) {
+      <div class="care-load-more">
+        <button
+          class="care-load-more-button action-button"
+          type="button"
+          [class.is-loading]="isShowingMore"
+          [disabled]="isShowingMore"
+          (click)="showMore()"
+        >
+          <span class="action-button-label">
+            @if (isShowingMore) {
+            <span class="action-button-spinner" aria-hidden="true"></span>
+            <span>Loading...</span>
+            } @else {
+            <span>See More</span>
+            }
+          </span>
+        </button>
+      </div>
+      }
+      }
+    </div>
+  </main>
+</div>

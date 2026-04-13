@@ -1,0 +1,21 @@
+@if (isVisible()) {
+<button
+  class="scroll-top-button"
+  type="button"
+  aria-label="Scroll to top"
+  [style.background]="progressStyle()"
+  (click)="scrollToTop()"
+>
+  <span class="scroll-top-inner">
+    <svg viewBox="0 0 24 24" fill="none" class="scroll-top-icon" aria-hidden="true">
+      <path
+        d="M12 20V5M12 5L6.5 10.5M12 5L17.5 10.5"
+        stroke="currentColor"
+        stroke-width="1.9"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </span>
+</button>
+}

@@ -1,0 +1,129 @@
+<app-site-navbar />
+
+<section class="auth-page">
+  <div class="auth-page-shell">
+    @if (currentUser()) {
+      <div class="auth-modal auth-panel">
+        <p class="auth-kicker">Signed in</p>
+        <h1 class="auth-title">You are already logged in</h1>
+        <p class="auth-copy">
+          Signed in as <strong>{{ currentUser()?.email }}</strong>.
+        </p>
+
+        <div class="auth-actions">
+          <a class="auth-submit action-button" routerLink="/">Continue</a>
+          <button type="button" class="auth-link-button" (click)="signOut()">Sign out</button>
+        </div>
+      </div>
+    } @else if (mode() === 'signin') {
+      <form class="auth-modal auth-panel auth-form" [formGroup]="signInForm" (ngSubmit)="submitSignIn()" novalidate>
+        <p class="auth-kicker">Welcome back</p>
+        <h1 class="auth-title">Sign in to your account</h1>
+        <p class="auth-copy">Use your email and password to continue shopping and manage your orders.</p>
+
+        <label class="auth-field">
+          <span>Email address</span>
+          <input type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+          @if (hasControlError(signInForm.controls.email, 'required')) {
+            <small>Email is required.</small>
+          } @else if (hasControlError(signInForm.controls.email, 'email')) {
+            <small>Enter a valid email address.</small>
+          }
+        </label>
+
+        <label class="auth-field">
+          <span>Password</span>
+          <input type="password" formControlName="password" placeholder="Enter your password" autocomplete="current-password" />
+          @if (hasControlError(signInForm.controls.password, 'required')) {
+            <small>Password is required.</small>
+          }
+        </label>
+
+        @if (errorMessage) {
+          <p class="auth-error">{{ errorMessage }}</p>
+        }
+
+        <button type="submit" class="auth-submit action-button" [class.is-loading]="isSubmitting" [disabled]="isSubmitting">
+          <span class="action-button-label">
+            @if (isSubmitting) {
+              <span class="action-button-spinner" aria-hidden="true"></span>
+              <span>Signing in...</span>
+            } @else {
+              <span>Sign in</span>
+            }
+          </span>
+        </button>
+
+        <p class="auth-switch">
+          Don't have an account?
+          <a routerLink="/auth/register">Register</a>
+        </p>
+      </form>
+    } @else {
+      <form class="auth-modal auth-panel auth-form" [formGroup]="registerForm" (ngSubmit)="submitRegister()" novalidate>
+        <p class="auth-kicker">Create account</p>
+        <h1 class="auth-title">Register with email</h1>
+        <p class="auth-copy">Create your account to save your details and continue through checkout faster.</p>
+
+        <label class="auth-field">
+          <span>Email address</span>
+          <input type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+          @if (hasControlError(registerForm.controls.email, 'required')) {
+            <small>Email is required.</small>
+          } @else if (hasControlError(registerForm.controls.email, 'email')) {
+            <small>Enter a valid email address.</small>
+          }
+        </label>
+
+        <label class="auth-field">
+          <span>Password</span>
+          <input type="password" formControlName="password" placeholder="Create a strong password" autocomplete="new-password" />
+          @if (hasControlError(registerForm.controls.password, 'required')) {
+            <small>Password is required.</small>
+          } @else if (hasControlError(registerForm.controls.password, 'minlength')) {
+            <small>Password must be at least 8 characters.</small>
+          } @else if (hasControlError(registerForm.controls.password, 'maxlength')) {
+            <small>Password must be 72 characters or less.</small>
+          } @else if (hasControlError(registerForm.controls.password, 'pattern')) {
+            <small>Use uppercase, lowercase, a number, and a special character.</small>
+          }
+        </label>
+
+        <label class="auth-field">
+          <span>Confirm password</span>
+          <input
+            type="password"
+            formControlName="confirmPassword"
+            placeholder="Confirm your password"
+            autocomplete="new-password"
+          />
+          @if (hasControlError(registerForm.controls.confirmPassword, 'required')) {
+            <small>Please confirm your password.</small>
+          } @else if (shouldShowGroupError(registerForm, 'passwordMismatch')) {
+            <small>Passwords do not match.</small>
+          }
+        </label>
+
+        @if (errorMessage) {
+          <p class="auth-error">{{ errorMessage }}</p>
+        }
+
+        <button type="submit" class="auth-submit action-button" [class.is-loading]="isSubmitting" [disabled]="isSubmitting">
+          <span class="action-button-label">
+            @if (isSubmitting) {
+              <span class="action-button-spinner" aria-hidden="true"></span>
+              <span>Creating account...</span>
+            } @else {
+              <span>Register</span>
+            }
+          </span>
+        </button>
+
+        <p class="auth-switch">
+          Already have an account?
+          <a routerLink="/auth/signin">Sign in</a>
+        </p>
+      </form>
+    }
+  </div>
+</section>

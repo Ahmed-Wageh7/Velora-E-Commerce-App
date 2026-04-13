@@ -1,0 +1,65 @@
+<section class="promise-showcase">
+  <a routerLink="/bags/promise" class="promise-banner" aria-label="Open Promise Bags collection">
+    <img src="/promise.webp" alt="Promise Bags banner" class="promise-banner-image" loading="lazy" />
+  </a>
+
+  <div class="section-header">
+    <h2 class="section-title">Fragrances That Refuse to Fade</h2>
+    <div class="title-underline"></div>
+  </div>
+
+  @if (productsState().status === 'loading') {
+    <div class="loading-panel">
+      <span class="loading-panel-spinner" aria-hidden="true"></span>
+      <span>{{ productsState().message }}</span>
+    </div>
+  } @else if (productsState().status === 'error') {
+    <div class="status-panel" role="status">
+      <h2>Promise Bags unavailable</h2>
+      <p>{{ productsState().message }}</p>
+    </div>
+  } @else if (productsState().status === 'empty') {
+    <div class="status-panel" role="status">
+      <h2>No products yet</h2>
+      <p>{{ productsState().message }}</p>
+    </div>
+  } @else {
+    <div class="promise-grid">
+      @for (product of productsState().data; track trackById($index, product)) {
+        <article class="promise-card">
+          <a class="product-card-link" [routerLink]="['/product', detailsFolder, product.id]">
+            <div class="promise-card-image-wrap media-hover-frame">
+              <img
+                [src]="product.primaryImageUrl"
+                [alt]="product.name"
+                class="promise-card-image media-hover-image"
+                loading="lazy"
+              />
+            </div>
+            <h3 class="promise-card-name">{{ product.name }}</h3>
+            <div class="promise-card-price">
+              <span class="promise-card-current">{{ formatPrice(product.price) }}</span>
+            </div>
+          </a>
+          <button
+            class="promise-card-button action-button"
+            type="button"
+            [class.promise-card-button-disabled]="product.quantity <= 0"
+            [class.is-loading]="isAddingToCart(product.id)"
+            [disabled]="product.quantity <= 0 || isAddingToCart(product.id)"
+            (click)="addToCart(product, $event)"
+          >
+            <span class="action-button-label">
+              @if (isAddingToCart(product.id)) {
+                <span class="action-button-spinner" aria-hidden="true"></span>
+                <span>Loading...</span>
+              } @else {
+                <span>{{ getButtonLabel(product) }}</span>
+              }
+            </span>
+          </button>
+        </article>
+      }
+    </div>
+  }
+</section>

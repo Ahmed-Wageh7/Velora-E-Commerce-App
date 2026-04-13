@@ -1,0 +1,212 @@
+<div #navbarShell class="navbar-shell" [class.is-docked]="isNavbarDocked">
+  <nav class="navbar" [class.scrolled]="isScrolled">
+    <div class="container flex-between">
+      <button class="icon-btn mobile-only mobile-menu-toggle" (click)="toggleMenu()" type="button">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+
+      <a routerLink="/" class="logo" aria-label="Velora home">
+        <img src="/velora-wordmark.svg" alt="Velora" class="logo-img" />
+      </a>
+
+      <div class="nav-links hide-mobile">
+        @for (item of rootNavItems(); track item.id) {
+          @if (item.children.length) {
+            <div class="dropdown">
+              <button
+                class="nav-link flex-center gap-1"
+                [class.nav-link--veloura-bags]="item.label === 'Veloura Bags'"
+                type="button"
+              >
+                {{ item.label }}
+                <svg class="nav-arrow icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              <div class="dropdown-menu ml-0 pl-0">
+                @for (child of item.children; track child.id) {
+                  <a [routerLink]="child.route" class="dropdown-item">{{ child.label }}</a>
+                }
+              </div>
+            </div>
+          } @else {
+            <a [routerLink]="item.route" class="nav-link" [class.nav-link--veloura-bags]="item.label === 'Veloura Bags'">
+              {{ item.label }}
+            </a>
+          }
+        }
+      </div>
+
+      <div class="nav-actions flex-center gap-2">
+        <button class="icon-btn" type="button" (click)="openSearchModal()" aria-label="Open search">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+
+        <a class="icon-btn" routerLink="/auth/signin" [attr.aria-label]="currentUser() ? 'Account page' : 'Sign in'">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+        </a>
+
+        <a routerLink="/checkout" class="icon-btn relative site-cart-link">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+            />
+          </svg>
+          <span class="badge">{{ cartCount() }}</span>
+        </a>
+      </div>
+    </div>
+
+    @if (isSearchModalOpen) {
+      <div class="navbar-search-backdrop" (click)="closeSearchModal()"></div>
+      <div class="navbar-search-modal" role="dialog" aria-modal="true" aria-labelledby="navbar-search-title">
+        <button type="button" class="navbar-search-close" (click)="closeSearchModal()" aria-label="Close search">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </button>
+
+        <div class="navbar-search-panel">
+          <p class="navbar-search-kicker">Search</p>
+          <h2 id="navbar-search-title" class="navbar-search-title">Find products on this page</h2>
+          <p class="navbar-search-copy">Searches the products that belong to the page you are currently browsing.</p>
+
+          <label class="navbar-search-field">
+            <span class="sr-only">Search products</span>
+            <input
+              type="search"
+              [value]="searchQuery()"
+              (input)="updateSearchQuery($any($event.target).value)"
+              placeholder="Search by name, collection, or detail"
+              autofocus
+            />
+          </label>
+
+          <div class="navbar-search-results">
+            @if (isSearchLoading) {
+              <div class="navbar-search-empty">Loading products...</div>
+            } @else if (!filteredSearchResults().length) {
+              <div class="navbar-search-empty">No products matched your search.</div>
+            } @else {
+              @for (result of filteredSearchResults(); track result.id) {
+                <a class="navbar-search-result" [routerLink]="result.route" (click)="closeSearchModal()">
+                  <div class="navbar-search-result-copy">
+                    <p class="navbar-search-result-name">{{ result.name }}</p>
+                    <p class="navbar-search-result-subtitle">{{ result.subtitle }}</p>
+                    <p class="navbar-search-result-collection">{{ result.collectionLabel }}</p>
+                  </div>
+                  <div class="navbar-search-result-media">
+                    <img [src]="result.imageUrl" [alt]="result.name" />
+                  </div>
+                </a>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="mobile-menu-backdrop" [class.open]="isMenuOpen" (click)="closeMenu()"></div>
+
+    <div class="mobile-menu" [class.open]="isMenuOpen">
+      <div class="mobile-menu-header">
+      <span class="mobile-menu-heading">Main Menu</span>
+      <button class="icon-btn mobile-menu-close" type="button" (click)="closeMenu()">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 6l12 12M18 6L6 18"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div class="mobile-menu-body">
+      <div
+        class="mobile-panel-track"
+        [style.transform]="'translateX(' + getMobilePanelOffset() + ')'"
+        [style.width]="getMobilePanelTrackWidth()"
+      >
+        <section class="mobile-panel" [style.width]="getMobilePanelWidth()">
+          @for (item of rootNavItems(); track item.id) {
+            @if (item.children.length) {
+              <button
+                class="mobile-link mobile-link-button"
+                type="button"
+                (click)="openMobilePanel(item.slug)"
+              >
+                <span>{{ item.label }}</span>
+                <svg class="mobile-link-arrow" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M7 4L13 10L7 16"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            } @else {
+              <a [routerLink]="item.route" class="mobile-link" (click)="closeMenu()">{{ item.label }}</a>
+            }
+          }
+        </section>
+
+        @for (item of dropdownNavItems(); track item.id) {
+          <section class="mobile-panel" [style.width]="getMobilePanelWidth()">
+            <button class="mobile-panel-back" type="button" (click)="goToRootPanel()">
+              <svg class="mobile-panel-back-icon" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M12 4L6 10L12 16"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>{{ item.label }}</span>
+            </button>
+            @for (child of item.children; track child.id) {
+              <a [routerLink]="child.route" class="mobile-sublink" (click)="closeMenu()">{{ child.label }}</a>
+            }
+          </section>
+        }
+      </div>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<div class="navbar-spacer" [style.height.px]="isNavbarDocked ? navbarSpacerHeight : 0"></div>

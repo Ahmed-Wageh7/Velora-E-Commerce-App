@@ -1,0 +1,143 @@
+<div class="pink-page">
+  <app-site-navbar />
+
+  <main class="pink-main">
+    <div class="pink-container">
+      <nav class="pink-breadcrumb" aria-label="Breadcrumb">
+        <a routerLink="/">Home</a>
+        <span class="breadcrumb-separator" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3.5L10.5 8L6 12.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span>Perfumes</span>
+        <span class="breadcrumb-separator" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3.5L10.5 8L6 12.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span>Pink Collection</span>
+      </nav>
+
+      <section class="pink-promo">
+        <div class="pink-promo-frame">
+          <img [src]="promoImageUrl" alt="Pink Collection promo" class="pink-promo-image" />
+        </div>
+      </section>
+
+      <div class="pink-heading-row">
+        <h1 class="pink-title">Perfumes | Pink Collection</h1>
+
+        <label class="pink-sort">
+          <span>Sort By</span>
+          <span class="sort-select-wrap">
+            <select
+              class="pink-sort-select"
+              [value]="selectedSort"
+              (change)="updateSort($any($event.target).value)"
+            >
+              @for (option of sortOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+              }
+            </select>
+            <span class="sort-select-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M4 6L8 10L12 6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+          </span>
+        </label>
+      </div>
+
+      @if (pinkProducts$ | async; as pinkProducts) {
+      <section class="pink-grid" aria-label="Pink products list">
+        @for (product of getVisibleProducts(pinkProducts); track trackById($index, product)) {
+        <article class="pink-card">
+          <a class="product-card-link" [routerLink]="['/product', 'pink-collection', product.id]">
+            <div class="pink-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
+              <img
+                class="pink-card-image pink-card-image-primary media-hover-image"
+                [src]="product.primaryImageUrl"
+                [alt]="product.primaryImageAlt"
+                loading="lazy"
+              />
+              @if (product.coverImageUrl) {
+              <img
+                class="pink-card-image pink-card-image-hover media-hover-image"
+                [src]="product.coverImageUrl"
+                [alt]="product.hoverImageAlt"
+                loading="lazy"
+              />
+              }
+            </div>
+
+            <h2 class="pink-card-name">{{ product.name }}</h2>
+
+            <div class="pink-card-price">
+              <span class="pink-card-current">{{ formatPrice(product.price) }}</span>
+            </div>
+          </a>
+
+          <button
+            class="pink-card-button action-button"
+            type="button"
+            [class.pink-card-button-disabled]="product.quantity <= 0"
+            [class.is-loading]="isAddingToCart(product.id)"
+            [disabled]="product.quantity <= 0 || isAddingToCart(product.id)"
+            (click)="addToCart(product, $event)"
+          >
+            <span class="action-button-label">
+              @if (isAddingToCart(product.id)) {
+              <span class="action-button-spinner" aria-hidden="true"></span>
+              <span>Loading...</span>
+              } @else {
+              <span>{{ getButtonLabel(product) }}</span>
+              }
+            </span>
+          </button>
+        </article>
+        }
+      </section>
+
+      @if (canShowMore(pinkProducts)) {
+      <div class="pink-load-more">
+        <button
+          class="pink-load-more-button action-button"
+          type="button"
+          [class.is-loading]="isShowingMore"
+          [disabled]="isShowingMore"
+          (click)="showMore()"
+        >
+          <span class="action-button-label">
+            @if (isShowingMore) {
+            <span class="action-button-spinner" aria-hidden="true"></span>
+            }
+            <span>Load More</span>
+          </span>
+        </button>
+      </div>
+      }
+      } @else {
+      <div class="loading-panel">
+        <span class="loading-panel-spinner" aria-hidden="true"></span>
+        <span>Loading products...</span>
+      </div>
+      }
+    </div>
+  </main>
+</div>

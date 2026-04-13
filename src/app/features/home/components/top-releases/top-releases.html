@@ -1,0 +1,78 @@
+<section class="top-releases-section">
+  <div class="section-header">
+    <h2 class="section-title">Top Releases</h2>
+    <p class="section-subtitle">Discover Our Signature Fragrance Collections</p>
+    <div class="title-underline"></div>
+  </div>
+
+  @if (topReleasesState().status === 'loading') {
+    <div class="top-releases-status" role="status">
+      <span>{{ topReleasesState().message }}</span>
+    </div>
+  } @else if (topReleasesState().status === 'error' || topReleasesState().status === 'empty') {
+    <div class="top-releases-status" role="status">
+      <span>{{ topReleasesState().message }}</span>
+    </div>
+  } @else {
+  <div class="carousel-wrapper">
+    <button
+      class="nav-arrow nav-arrow--left"
+      type="button"
+      aria-label="Previous"
+      (click)="scrollCarousel(viewport, -1)"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+
+    <div class="carousel-viewport" #viewport>
+      <div class="cards-track">
+        <button
+          *ngFor="let product of topReleasesState().data; let i = index; trackBy: trackById"
+          class="perfume-card action-button"
+          type="button"
+          [style.animation-delay]="i * 80 + 'ms'"
+          [class.perfume-card-link]="true"
+          [class.is-loading]="isOpeningProduct(product, i)"
+          [disabled]="isOpeningProduct(product, i)"
+          (click)="openProduct(product, i)"
+        >
+          <div class="card-shimmer"></div>
+          <div class="image-wrapper media-hover-frame">
+            <img [src]="product.primaryImageUrl" [alt]="product.name" class="perfume-image media-hover-image" loading="lazy" />
+          </div>
+          @if (isOpeningProduct(product, i)) {
+          <span class="sr-only">Opening product</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    <button
+      class="nav-arrow nav-arrow--right"
+      type="button"
+      aria-label="Next"
+      (click)="scrollCarousel(viewport, 1)"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+  </div>
+  }
+</section>

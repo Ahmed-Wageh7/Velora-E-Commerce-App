@@ -1,0 +1,42 @@
+<section class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+  <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+    <div class="rounded-[2rem] border border-white/70 bg-white/70 p-8 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.35)] backdrop-blur sm:p-10">
+      <p class="text-sm font-semibold tracking-[0.3em] text-sky-600 uppercase">Curated Storefront</p>
+      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+        Elevated essentials for modern living.
+      </h1>
+      <p class="mt-5 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+        Discover a focused collection of design-forward pieces with clean materials,
+        effortless styling, and shipping-free checkout for your demo storefront.
+      </p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="rounded-[2rem] bg-slate-950 p-6 text-white shadow-[0_20px_70px_-32px_rgba(15,23,42,0.55)]">
+        <p class="text-sm text-slate-300">Store Promise</p>
+        <p class="mt-3 text-2xl font-semibold">Fast local checkout flow</p>
+      </div>
+      <div class="rounded-[2rem] border border-slate-200 bg-white/80 p-6 shadow-[0_20px_70px_-36px_rgba(15,23,42,0.25)]">
+        <p class="text-sm text-slate-500">Data Source</p>
+        <p class="mt-3 text-2xl font-semibold text-slate-950">JSON only</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
+  <div class="mb-8 flex items-end justify-between gap-4">
+    <div>
+      <p class="text-sm font-semibold tracking-[0.28em] text-slate-500 uppercase">Products</p>
+      <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Shop the collection</h2>
+    </div>
+  </div>
+
+  @if (products$ | async; as products) {
+    <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      @for (product of products; track product.id) {
+        <app-product-card [product]="product" />
+      }
+    </div>
+  }
+</section>

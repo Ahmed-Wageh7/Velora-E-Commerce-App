@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "title": "بروميس قولد",
+    "badge": "",
+    "name": "بروميس قولد",
+    "detail": "",
+    "price": 675,
+    "originalPrice": 1450,
+    "quantity": 1,
+    "primaryImage": "image1.png",
+    "hoverImage": "image1.png"
+  },
+  {
+    "id": 2,
+    "title": "بروميس قولد",
+    "badge": "",
+    "name": "بروميس قولد",
+    "detail": "",
+    "price": 675,
+    "originalPrice": 1450,
+    "quantity": 1,
+    "primaryImage": "image2.png",
+    "hoverImage": "image2.png"
+  },
+  {
+    "id": 3,
+    "title": "شنطة بروميس قولد",
+    "badge": "مطلي بالذهب ٢٤",
+    "name": "شنطة بروميس قولد",
+    "detail": "جلد طبيعي فاخر",
+    "price": 795,
+    "originalPrice": 1600,
+    "quantity": 1,
+    "primaryImage": "image3.png",
+    "hoverImage": "image3.png"
+  },
+  {
+    "id": 4,
+    "title": "شنطة بروميس قولد",
+    "badge": "مطلي بالذهب ٢٤",
+    "name": "شنطة بروميس قولد",
+    "detail": "جلد طبيعي فاخر",
+    "price": 795,
+    "originalPrice": 1600,
+    "quantity": 1,
+    "primaryImage": "image4.png",
+    "hoverImage": "image4.png"
+  },
+  {
+    "id": 5,
+    "title": "شنطة بروميس قولد",
+    "badge": "مطلي بالذهب ٢٤",
+    "name": "شنطة بروميس قولد",
+    "detail": "جلد طبيعي فاخر",
+    "price": 795,
+    "originalPrice": 1600,
+    "quantity": 1,
+    "primaryImage": "image5png.png",
+    "hoverImage": "image5png.png"
+  }
+]

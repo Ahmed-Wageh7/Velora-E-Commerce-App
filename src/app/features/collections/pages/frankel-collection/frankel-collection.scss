@@ -1,0 +1,580 @@
+:host {
+  display: block;
+  background: transparent;
+  color: #8f7c56;
+  min-height: 100vh;
+}
+
+.frankel-page {
+  min-height: 100vh;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.frankel-container {
+  width: min(var(--app-layout-max-width), calc(100% - 48px));
+  margin: 0 auto;
+  background: transparent;
+}
+
+.frankel-main {
+  flex: 1;
+  min-height: 0;
+  padding: 18px 0 72px;
+  background: transparent;
+}
+
+.frankel-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #b3a485;
+}
+
+.frankel-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumb-separator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: #b3a485;
+}
+
+.breadcrumb-separator svg {
+  width: 100%;
+  height: 100%;
+}
+
+.frankel-hero {
+  margin-top: 28px;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-start;
+  background: transparent;
+}
+
+.frankel-hero-image {
+  display: block;
+  width: 50%;
+  height: auto;
+  object-fit: cover;
+  object-position: left center;
+}
+
+.frankel-hero-full-width {
+  justify-content: flex-start;
+}
+
+.frankel-hero-image-full-width {
+  width: 50%;
+}
+
+.frankel-hero-image-actual-full-width {
+  width: 100%;
+}
+
+.frankel-heading-row {
+  margin-top: 36px;
+  margin-bottom: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.frankel-title {
+  margin: 0;
+  color: #7e6c4b;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.frankel-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #9a8863;
+  font-size: 14px;
+}
+
+.sort-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.frankel-sort-select {
+  min-width: 142px;
+  height: 36px;
+  border: 1px solid #e8e2d6;
+  border-radius: 6px;
+  padding: 0 36px 0 12px;
+  background: #fff;
+  color: #9a8863;
+  font-size: 14px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.sort-select-icon {
+  position: absolute;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  color: #b3a485;
+  pointer-events: none;
+}
+
+.sort-select-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.frankel-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 28px 24px;
+  align-items: start;
+  justify-items: stretch;
+}
+
+.frankel-card {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  transform: translateY(0);
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+
+.frankel-card-image-wrap {
+  position: relative;
+  height: 210px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.frankel-card-image-wrap::after {
+  content: '';
+  position: absolute;
+  top: -12%;
+  bottom: -12%;
+  left: -42%;
+  width: 30%;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.frankel-card-image-wrap-care-shimmer {
+  isolation: isolate;
+}
+
+.frankel-card-image-wrap-care-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -12%;
+  bottom: -12%;
+  left: -42%;
+  width: 30%;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.frankel-card:hover .frankel-card-image-wrap::after {
+  animation: frankel-card-shimmer var(--shimmer-duration) ease forwards;
+}
+
+.frankel-card-care-shimmer:hover .frankel-card-image-wrap::after {
+  animation: none;
+}
+
+.frankel-card-care-shimmer:hover .frankel-card-image-wrap-care-shimmer::after,
+.frankel-card-care-shimmer:focus-within .frankel-card-image-wrap-care-shimmer::after {
+  animation: care-card-shimmer var(--shimmer-duration) ease forwards;
+}
+
+.care-card:hover .care-card-image-wrap::after,
+.care-card:focus-within .care-card-image-wrap::after {
+  animation: care-card-shimmer var(--shimmer-duration) ease forwards;
+}
+
+.frankel-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  transition:
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+
+.frankel-card-image-care-primary,
+.frankel-card-image-care-hover {
+  transition:
+    opacity 0.75s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.75s ease;
+}
+
+.care-card-image {
+  transition:
+    opacity 0.75s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.75s ease;
+}
+
+.frankel-card-image-primary {
+  opacity: 1;
+  z-index: 1;
+}
+
+.frankel-card-image-hover {
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.frankel-card:hover .frankel-card-image-wrap.has-hover-image .frankel-card-image-primary,
+.frankel-card:focus-within .frankel-card-image-wrap.has-hover-image .frankel-card-image-primary {
+  opacity: 0;
+}
+
+.frankel-card:hover .frankel-card-image-wrap.has-hover-image .frankel-card-image-hover,
+.frankel-card:focus-within .frankel-card-image-wrap.has-hover-image .frankel-card-image-hover {
+  opacity: 1;
+}
+
+.frankel-card-image-care-primary {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.frankel-card-image-care-hover {
+  opacity: 0;
+  transform: translateY(10px) scale(1);
+}
+
+.frankel-card:hover .frankel-card-image-wrap-care-shimmer.has-hover-image .frankel-card-image-care-primary,
+.frankel-card:focus-within .frankel-card-image-wrap-care-shimmer.has-hover-image .frankel-card-image-care-primary {
+  opacity: 0;
+  transform: translateY(-10px) scale(1);
+}
+
+.frankel-card:hover .frankel-card-image-wrap-care-shimmer.has-hover-image .frankel-card-image-care-hover,
+.frankel-card:focus-within .frankel-card-image-wrap-care-shimmer.has-hover-image .frankel-card-image-care-hover {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.care-card-image-primary {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.care-card-image-hover {
+  opacity: 0;
+  transform: translateY(10px) scale(1);
+}
+
+.care-card:hover .care-card-image-wrap.has-hover-image .care-card-image-primary,
+.care-card:focus-within .care-card-image-wrap.has-hover-image .care-card-image-primary {
+  opacity: 0;
+  transform: translateY(-10px) scale(1);
+}
+
+.care-card:hover .care-card-image-wrap.has-hover-image .care-card-image-hover,
+.care-card:focus-within .care-card-image-wrap.has-hover-image .care-card-image-hover {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.frankel-card-name {
+  margin: 0 0 8px;
+  color: #9a845d;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'Helvetica Neue', 'Arial', sans-serif;
+  line-height: 1.5;
+  text-transform: none;
+  text-align: center;
+  letter-spacing: 0.01em;
+  min-height: 60px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.frankel-card-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  min-height: 36px;
+}
+
+.frankel-card-current {
+  color: #18336f;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.frankel-card-original {
+  color: #d0c7b6;
+  font-size: 13px;
+  text-decoration: line-through;
+}
+
+.frankel-card-button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0 12px;
+  border: 2px solid #bdb6a8;
+  background: #fff;
+  color: #767676;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: 0;
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    opacity 0.35s ease;
+}
+
+.frankel-card:hover .frankel-card-button {
+  transform: translateY(-1px);
+}
+
+.frankel-card-button-disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.frankel-card-skeleton {
+  pointer-events: none;
+}
+
+.frankel-card-skeleton-block {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(235, 229, 218, 0.7), rgba(245, 241, 233, 0.95));
+}
+
+.frankel-card-skeleton-block::after {
+  content: '';
+  position: absolute;
+  top: -12%;
+  bottom: -12%;
+  left: -42%;
+  width: 30%;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0;
+  animation: frankel-card-shimmer var(--shimmer-duration) ease infinite;
+}
+
+.frankel-card-skeleton .frankel-card-image-wrap {
+  margin-bottom: 18px;
+}
+
+.frankel-card-skeleton-name {
+  min-height: 60px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.frankel-card-skeleton-price {
+  display: inline-flex;
+  width: 74px;
+  min-height: 18px;
+  border-radius: 999px;
+}
+
+.frankel-card-skeleton-price-secondary {
+  width: 56px;
+}
+
+.frankel-card-skeleton-button {
+  min-height: 44px;
+}
+
+.frankel-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 44px;
+}
+
+.frankel-load-more-button {
+  min-width: 180px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #8e6f24;
+  background: #8e6f24;
+  color: #fff8e7;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 24px rgba(142, 111, 36, 0.18);
+  transition:
+    transform 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease;
+}
+
+.frankel-load-more-button:hover {
+  transform: translateY(-1px);
+  border-color: #755a1c;
+  background: #755a1c;
+}
+
+.frankel-load-more-button:disabled {
+  opacity: 0.9;
+}
+
+@keyframes frankel-card-shimmer {
+  0% {
+    left: -42%;
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 118%;
+    opacity: 0;
+  }
+}
+
+@keyframes care-card-shimmer {
+  0% {
+    left: -42%;
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 118%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .frankel-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 20px;
+    justify-items: stretch;
+  }
+}
+
+@media (max-width: 720px) {
+  .frankel-container {
+    width: min(100% - 32px, var(--app-layout-max-width));
+  }
+
+  .frankel-hero-image {
+    width: 100%;
+  }
+
+  .frankel-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 40px;
+  }
+
+  .frankel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+    justify-items: stretch;
+  }
+
+  .frankel-card-image-wrap {
+    height: 200px;
+  }
+
+  .frankel-card {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 580px) {
+  .frankel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 14px;
+  }
+
+  .frankel-card-image-wrap {
+    height: 190px;
+  }
+
+  .frankel-card-button {
+    width: 100%;
+  }
+}

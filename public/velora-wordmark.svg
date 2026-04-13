@@ -1,0 +1,31 @@
+<svg width="720" height="220" viewBox="0 0 720 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="veloraGold" x1="94" y1="52" x2="640" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8E6B2" />
+      <stop offset="0.32" stop-color="#D5B36A" />
+      <stop offset="0.68" stop-color="#A77D2F" />
+      <stop offset="1" stop-color="#F1D899" />
+    </linearGradient>
+    <filter id="softShadow" x="0" y="0" width="720" height="220" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#5A4014" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <rect width="720" height="220" rx="28" fill="transparent" />
+
+  <g filter="url(#softShadow)">
+    <text
+      x="50%"
+      y="54%"
+      text-anchor="middle"
+      dominant-baseline="middle"
+      fill="url(#veloraGold)"
+      font-family="'Times New Roman', 'Palatino Linotype', serif"
+      font-size="96"
+      font-weight="600"
+      letter-spacing="18"
+    >
+      VELORA
+    </text>
+  </g>
+</svg>

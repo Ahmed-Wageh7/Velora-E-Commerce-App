@@ -1,0 +1,267 @@
+<div class="product-details-page">
+  <app-site-navbar />
+
+  <main class="product-details-main">
+    <div class="product-details-container">
+      @if (productState().status === 'loading') {
+        <div class="loading-panel">
+          <span class="loading-panel-spinner" aria-hidden="true"></span>
+          <span>{{ productState().message }}</span>
+        </div>
+      } @else if (product(); as product) {
+        <nav class="product-breadcrumb" aria-label="Breadcrumb">
+          <a routerLink="/">Home</a>
+          <span class="breadcrumb-separator" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path
+                d="M6 3.5L10.5 8L6 12.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <span>{{ breadcrumbLabel() }}</span>
+          <span class="breadcrumb-separator" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path
+                d="M6 3.5L10.5 8L6 12.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <span>{{ product.name }}</span>
+        </nav>
+
+        <section class="product-hero">
+          <div class="product-gallery">
+            <button
+              type="button"
+              class="product-image-shell"
+              (click)="openImagePreview(getActiveImage(product))"
+              [attr.aria-label]="'Open large preview for ' + product.name"
+            >
+              <img
+                #activeProductImage
+                [src]="getActiveImage(product)"
+                [alt]="product.name"
+                class="product-image media-hover-image"
+              />
+            </button>
+
+            <div class="product-supporting-images">
+              @for (image of supportingImages(); track image + $index) {
+                <button
+                  type="button"
+                  class="product-supporting-image-shell"
+                  [class.is-selected]="image === getActiveImage(product)"
+                  (click)="selectImage(image)"
+                  [attr.aria-label]="'Select image ' + ($index + 1) + ' for ' + product.name"
+                >
+                  <img [src]="image" [alt]="product.name + ' detail image'" class="product-supporting-image" />
+                  @if (image === getActiveImage(product)) {
+                    <span class="selection-check selection-check--thumbnail" aria-hidden="true">
+                      <svg viewBox="0 0 16 16" fill="none">
+                        <path
+                          d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="product-summary">
+            <div class="product-summary-head">
+              <h1 class="product-title">{{ product.name }}</h1>
+              @if (product.subtitle || product.detail) {
+                <p class="product-subtitle">{{ product.subtitle || product.detail }}</p>
+              }
+              <div class="product-rating">
+                <div class="product-stars" aria-hidden="true">
+                  @for (_ of stars(); track $index) {
+                    <span>★</span>
+                  }
+                </div>
+                <span class="product-reviews">{{ getReviewLabel(product) }}</span>
+              </div>
+              <div class="product-price-row">
+                <span class="product-price-current">{{ formatPrice(product.price) }}</span>
+              </div>
+              <div class="product-stock" [class.is-out]="product.quantity <= 0">
+                <span class="product-stock-icon" aria-hidden="true">
+                  @if (product.quantity > 0) {
+                    <svg viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="M3.5 8.5L6.5 11.5L12.5 4.5"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 16 16" fill="none">
+                      <path d="M5 5L11 11M11 5L5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  }
+                </span>
+                <span>{{ product.status }}</span>
+              </div>
+            </div>
+
+            @if (product.relatedProducts.length) {
+              <div class="related-strip">
+                <h2 class="related-title">Frequently bought together</h2>
+                <div class="related-carousel">
+                  <button
+                    class="related-arrow related-arrow--left"
+                    type="button"
+                    aria-label="Scroll related products left"
+                    (click)="scrollRelatedCarousel(relatedViewport, -1)"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M14.5 5L8 12L14.5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  </button>
+
+                  <div class="related-viewport" #relatedViewport>
+                    <div class="related-grid">
+                      @for (relatedProduct of product.relatedProducts; track relatedProduct.id) {
+                        <a
+                          class="related-card"
+                          [routerLink]="['/product', relatedProduct.folder, relatedProduct.id]"
+                        >
+                          <img [src]="relatedProduct.imageUrl" [alt]="relatedProduct.name" class="related-card-image" />
+                          <span class="related-card-name">{{ relatedProduct.name }}</span>
+                          <span class="related-card-price">{{ formatPrice(relatedProduct.price) }}</span>
+                        </a>
+                      }
+                    </div>
+                  </div>
+
+                  <button
+                    class="related-arrow related-arrow--right"
+                    type="button"
+                    aria-label="Scroll related products right"
+                    (click)="scrollRelatedCarousel(relatedViewport, 1)"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M9.5 5L16 12L9.5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (product.sections.length) {
+              <div class="product-sections">
+                @for (section of product.sections; track section.title) {
+                  <section class="product-section">
+                    <h3>{{ section.title }}</h3>
+                    @for (line of section.lines; track line) {
+                      <p>{{ line }}</p>
+                    }
+                  </section>
+                }
+              </div>
+            }
+
+            @if (product.description) {
+              <section class="product-description-section">
+                <h3>Description</h3>
+                <p class="product-description">{{ product.description }}</p>
+              </section>
+            }
+
+            <div class="product-meta">
+              <div class="product-meta-row">
+                <span class="meta-label">SKU</span>
+                <span class="meta-value">{{ product.sku }}</span>
+              </div>
+              <div class="product-meta-row">
+                <span class="meta-label">Size</span>
+                <span class="meta-value">{{ product.size }}</span>
+              </div>
+              <div class="product-meta-row">
+                <span class="meta-label">Product type</span>
+                <span class="meta-value">{{ product.productType }}</span>
+              </div>
+            </div>
+
+            <div class="purchase-panel">
+            <div class="purchase-price">
+              <span class="purchase-price-current">{{ formatPrice(product.price) }}</span>
+            </div>
+
+              <div class="quantity-picker">
+                <span class="quantity-label">Quantity</span>
+                <div class="quantity-controls">
+                  <button type="button" (click)="decreaseQuantity()">−</button>
+                  <span>{{ selectedQuantity() }}</span>
+                  <button type="button" (click)="increaseQuantity()">+</button>
+                </div>
+              </div>
+
+              <div class="purchase-actions">
+                <button
+                  type="button"
+                  class="purchase-button action-button"
+                  [class.is-loading]="isAddingToCart"
+                  [disabled]="isAddingToCart || product.quantity <= 0"
+                  (click)="addToCart(product)"
+                >
+                  <span class="action-button-label">
+                    @if (isAddingToCart) {
+                      <span class="action-button-spinner" aria-hidden="true"></span>
+                      <span>Loading...</span>
+                    } @else if (product.quantity <= 0) {
+                      <span>Out of stock</span>
+                    } @else {
+                      <span>Add to cart</span>
+                    }
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      } @else if (productState().status === 'error') {
+        <div class="product-empty">
+          <h2>Product unavailable</h2>
+          <p>{{ productState().message }}</p>
+        </div>
+      } @else {
+        <div class="product-empty">
+          <h2>Product not found</h2>
+          <p>{{ productState().message || 'The product you requested could not be loaded from the catalog.' }}</p>
+        </div>
+      }
+    </div>
+  </main>
+
+  @if (previewImage(); as previewImage) {
+    <div class="product-preview-backdrop" (click)="closeImagePreview()"></div>
+    <div
+      class="product-preview-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Product image preview"
+    >
+      <button type="button" class="product-preview-close" (click)="closeImagePreview()" aria-label="Close preview">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+      <img [src]="previewImage" [alt]="product()?.name || 'Product image preview'" class="product-preview-image" />
+    </div>
+  }
+</div>

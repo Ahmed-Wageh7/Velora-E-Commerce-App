@@ -1,0 +1,39 @@
+.hero-section {
+  position: relative;
+  width: 100%;
+  min-height: auto;
+  aspect-ratio: 1440 / 893;
+  margin-bottom: 0;
+  overflow: hidden;
+  background: #f6f1e1;
+}
+
+.hero-slides {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+}
+
+.hero-slide.active {
+  opacity: 1;
+}
+
+.hero-slide img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center center;
+}
+
+@media (max-width: 767px) {
+  .hero-section {
+    aspect-ratio: 506 / 899;
+  }
+}

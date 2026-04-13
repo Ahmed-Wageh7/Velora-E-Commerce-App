@@ -1,0 +1,28 @@
+<section class="view-third-section">
+  <div class="view-third-container">
+    <div class="view-third-gallery">
+      <a routerLink="/offers/buy-1-get-2-free" aria-label="Open Buy 1 Get Two Free offer">
+        <img
+          [src]="imageUrls.primaryRight"
+          alt="Discount offer visual"
+          class="view-third-image view-third-image-half"
+          loading="lazy"
+        />
+      </a>
+      <a routerLink="/offers/buy-2-get-third-free" aria-label="Open Buy 2 Get One Free offer">
+        <img
+          [src]="imageUrls.primaryLeft"
+          alt="Discount highlight visual"
+          class="view-third-image view-third-image-half"
+          loading="lazy"
+        />
+      </a>
+      <img
+        [src]="imageUrls.featureWide"
+        alt="Topaco collection visual"
+        class="view-third-image view-third-image-wide"
+        loading="lazy"
+      />
+    </div>
+  </div>
+</section>

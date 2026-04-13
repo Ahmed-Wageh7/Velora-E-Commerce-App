@@ -1,0 +1,167 @@
+<div class="frankel-page">
+  <app-site-navbar />
+
+  <main class="frankel-main">
+    <div class="frankel-container">
+      <nav class="frankel-breadcrumb" aria-label="Breadcrumb">
+        <a routerLink="/">Home</a>
+        <span class="breadcrumb-separator" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3.5L10.5 8L6 12.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span>Veloura Bags</span>
+        <span class="breadcrumb-separator" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3.5L10.5 8L6 12.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        <span>{{ breadcrumbLabel() }}</span>
+      </nav>
+
+      @if (hasHero()) {
+        <section class="frankel-hero" [class.frankel-hero-full-width]="fullWidthHero()">
+          <img
+            [src]="heroImageUrl()"
+            [alt]="breadcrumbLabel()"
+            class="frankel-hero-image"
+            [class.frankel-hero-image-full-width]="fullWidthHero()"
+            [class.frankel-hero-image-actual-full-width]="fullWidthHero()"
+          />
+        </section>
+      }
+
+      <div class="frankel-heading-row">
+        <h1 class="frankel-title">{{ pageTitle() }}</h1>
+
+        <label class="frankel-sort">
+          <span>Sort By</span>
+          <span class="sort-select-wrap">
+            <select
+              class="frankel-sort-select"
+              [value]="selectedSort"
+              (change)="updateSort($any($event.target).value)"
+            >
+              @for (option of sortOptions; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+            <span class="sort-select-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M4 6L8 10L12 6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+          </span>
+        </label>
+      </div>
+
+      @if (bagProducts$ | async; as bagProducts) {
+        <section class="frankel-grid" [attr.aria-label]="breadcrumbLabel() + ' products list'">
+          @for (product of getVisibleProducts(bagProducts); track trackById($index, product)) {
+            <article
+              class="frankel-card"
+              [class.care-card]="useCareShimmer()"
+              [class.frankel-card-care-shimmer]="useCareShimmer()"
+            >
+              <a class="product-card-link" [routerLink]="['/product', collectionFolder(), product.id]">
+                <div
+                  class="frankel-card-image-wrap"
+                  [class.has-hover-image]="!!product.coverImageUrl"
+                  [class.care-card-image-wrap]="useCareShimmer()"
+                  [class.media-hover-frame]="!useCareShimmer()"
+                  [class.frankel-card-image-wrap-care-shimmer]="useCareShimmer()"
+                >
+                  <img
+                    class="frankel-card-image frankel-card-image-primary"
+                    [class.care-card-image]="useCareShimmer()"
+                    [class.care-card-image-primary]="useCareShimmer()"
+                    [class.frankel-card-image-care-primary]="useCareShimmer()"
+                    [class.media-hover-image]="!useCareShimmer()"
+                    [src]="product.primaryImageUrl"
+                    [alt]="product.primaryImageAlt"
+                    loading="lazy"
+                  />
+                  @if (product.coverImageUrl) {
+                    <img
+                      class="frankel-card-image frankel-card-image-hover"
+                      [class.care-card-image]="useCareShimmer()"
+                      [class.care-card-image-hover]="useCareShimmer()"
+                      [class.frankel-card-image-care-hover]="useCareShimmer()"
+                      [class.media-hover-image]="!useCareShimmer()"
+                      [src]="product.coverImageUrl"
+                      [alt]="product.hoverImageAlt"
+                      loading="lazy"
+                    />
+                  }
+                </div>
+
+                <h2 class="frankel-card-name">{{ product.name }}</h2>
+
+                <div class="frankel-card-price">
+                  <span class="frankel-card-current">{{ formatPrice(product.price) }}</span>
+                </div>
+              </a>
+
+              <button
+                class="frankel-card-button action-button"
+                type="button"
+                [class.frankel-card-button-disabled]="product.quantity <= 0"
+                [class.is-loading]="isAddingToCart(product.id)"
+                [disabled]="product.quantity <= 0 || isAddingToCart(product.id)"
+                (click)="addToCart(product, $event)"
+              >
+                <span class="action-button-label">
+                  @if (isAddingToCart(product.id)) {
+                    <span class="action-button-spinner" aria-hidden="true"></span>
+                    <span>Loading...</span>
+                  } @else {
+                    <span>{{ getButtonLabel(product) }}</span>
+                  }
+                </span>
+              </button>
+            </article>
+          }
+        </section>
+
+        @if (canShowMore(bagProducts)) {
+          <div class="frankel-load-more">
+            <button
+              class="frankel-load-more-button action-button"
+              type="button"
+              [class.is-loading]="isShowingMore"
+              [disabled]="isShowingMore"
+              (click)="showMore()"
+            >
+              <span class="action-button-label">
+                @if (isShowingMore) {
+                  <span class="action-button-spinner" aria-hidden="true"></span>
+                }
+                <span>Load More</span>
+              </span>
+            </button>
+          </div>
+        }
+      } @else {
+        <div class="loading-panel">
+          <span class="loading-panel-spinner" aria-hidden="true"></span>
+          <span>Loading products...</span>
+        </div>
+      }
+    </div>
+  </main>
+</div>
