@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ApiImageValue, ApiProductRecord, buildMediaUrl, getApiBaseUrl, getProductId, getPrimaryImageUrl } from './product-api.utils';
+import { ApiCategoryRef, ApiImageValue, ApiProductRecord, buildMediaUrl, getApiBaseUrl, getProductId, getPrimaryImageUrl, normalizeLabel } from './product-api.utils';
 
 interface CartMutationResponse {
   success?: boolean;
@@ -154,12 +154,94 @@ export class CartApiService {
       detailFolder:
         line.detailFolder ??
         (productCandidate && 'detailFolder' in productCandidate ? productCandidate.detailFolder : undefined) ??
-        (productCandidate && 'folder' in productCandidate ? productCandidate.folder : undefined),
+        (productCandidate && 'folder' in productCandidate ? productCandidate.folder : undefined) ??
+        this.inferDetailFolderFromProduct(productCandidate),
     };
   }
 
   private asProductRecord(value: unknown): (ApiProductRecord & { detailFolder?: string; folder?: string }) | null {
     return value && typeof value === 'object' ? (value as ApiProductRecord & { detailFolder?: string; folder?: string }) : null;
+  }
+
+  private inferDetailFolderFromProduct(product: ApiProductRecord | null): string | undefined {
+    if (!product) {
+      return undefined;
+    }
+
+    const categoryName = this.getRefName(product.category);
+    const subcategoryName = this.getRefName(product.subcategory);
+    const normalizedCategory = normalizeLabel(categoryName);
+    const normalizedSubcategory = normalizeLabel(subcategoryName);
+
+    if (normalizedCategory.includes('perfumes')) {
+      if (normalizedSubcategory.includes('arrogate')) {
+        return 'Arrogate-collection';
+      }
+
+      if (normalizedSubcategory.includes('frankel')) {
+        return 'category-frankel';
+      }
+
+      if (normalizedSubcategory.includes('pink')) {
+        return 'pink-collection';
+      }
+
+      if (normalizedSubcategory.includes('topacco') || normalizedSubcategory.includes('topaco')) {
+        return 'category-topaco';
+      }
+    }
+
+    if (normalizedCategory.includes('bags')) {
+      if (normalizedSubcategory.includes('promise')) {
+        return 'promise-bags';
+      }
+
+      if (normalizedSubcategory.includes('women')) {
+        return 'women-bags';
+      }
+
+      if (normalizedSubcategory.includes('children')) {
+        return 'children-bags';
+      }
+    }
+
+    if (normalizedCategory.includes('watches')) {
+      if (normalizedSubcategory.includes('women')) {
+        return 'women-watches';
+      }
+
+      if (normalizedSubcategory.includes('sport')) {
+        return 'sports-watches';
+      }
+
+      if (normalizedSubcategory.includes('classic')) {
+        return 'classic-watches';
+      }
+    }
+
+    if (normalizedCategory.includes('sunglasses')) {
+      if (normalizedSubcategory.includes('women')) {
+        return 'women-sunglasses';
+      }
+
+      if (normalizedSubcategory.includes('men')) {
+        return 'men-sunglasses';
+      }
+    }
+
+    if (normalizedCategory.includes('care')) {
+      return 'care';
+    }
+
+    return undefined;
+  }
+
+  private getRefName(value: string | ApiCategoryRef | null | undefined): string {
+    if (!value || typeof value === 'string') {
+      return '';
+    }
+
+    return value.name ?? '';
   }
 
   private readArray(value: unknown, key: string): unknown[] | null {

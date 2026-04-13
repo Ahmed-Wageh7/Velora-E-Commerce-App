@@ -85,12 +85,25 @@ export interface ProductDetails {
   relatedProducts: RelatedProductSummary[];
 }
 
+export interface ProductLookupHint {
+  id?: string;
+  detailProductId?: string;
+  name?: string;
+  image?: string;
+  description?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ProductDetailsService {
   private readonly http = inject(HttpClient);
   private readonly productCollectionsService = inject(ProductCollectionsService);
+  private readonly specialCollectionSubcategoryIds: Record<string, string> = {
+    'Arrogate-collection': '69d50edf9e39253830600b30',
+    'category-frankel': '69d506d49e39253830600ace',
+    'promise-bags': '69d4fe299e39253830600a70',
+  };
 
   getProductDetails(folder: string, id: string): Observable<ProductDetails | null> {
     const normalizedFolder = folder.replace(/^\/|\/$/g, '');
@@ -106,6 +119,23 @@ export class ProductDetailsService {
           map((relatedProducts) => this.toProductDetails(normalizedFolder, product, relatedProducts)),
         );
       }),
+    );
+  }
+
+  recoverProductDetails(folder: string, hint: ProductLookupHint): Observable<ProductDetails | null> {
+    const normalizedFolder = folder.replace(/^\/|\/$/g, '');
+    const subcategoryId = this.specialCollectionSubcategoryIds[normalizedFolder];
+    const products$ = subcategoryId
+      ? this.productCollectionsService.getProductsBySubcategoryId(subcategoryId, true, { includeDeleted: true })
+      : this.productCollectionsService.getProductsByQuery(undefined, undefined).pipe(
+          switchMap(() =>
+            this.productCollectionsService.getProductsByQuery(undefined),
+          ),
+        );
+
+    return products$.pipe(
+      map((products) => this.findMatchingProductId(products, hint)),
+      switchMap((productId) => (productId ? this.getProductDetails(normalizedFolder, productId) : of(null))),
     );
   }
 
@@ -304,6 +334,28 @@ export class ProductDetailsService {
     const categoryName = this.getRefName(product.category).toLowerCase();
     const subcategoryName = this.getRefName(product.subcategory).toLowerCase();
 
+    if (categoryName.includes('perfume')) {
+      if (subcategoryName.includes('arrogate')) {
+        return 'Arrogate-collection';
+      }
+
+      if (subcategoryName.includes('frankel')) {
+        return 'category-frankel';
+      }
+
+      if (subcategoryName.includes('pink')) {
+        return 'pink-collection';
+      }
+
+      if (subcategoryName.includes('topacco') || subcategoryName.includes('topaco')) {
+        return 'category-topaco';
+      }
+
+      if (subcategoryName.includes('art-of-detecation') || subcategoryName.includes('art of dedication')) {
+        return 'The-Art-Dedication';
+      }
+    }
+
     if (categoryName.includes('sunglasses')) {
       if (subcategoryName.includes('women')) {
         return 'women-sunglasses';
@@ -369,5 +421,62 @@ export class ProductDetailsService {
     }
 
     return normalized;
+  }
+
+  private findMatchingProductId(products: ApiProductRecord[], hint: ProductLookupHint): string | null {
+    const normalizedName = this.normalizeLookup(hint.name);
+    const normalizedImage = this.normalizeLookup(hint.image);
+    const normalizedDescription = this.normalizeLookup(hint.description);
+    const preferredIds = [hint.detailProductId, hint.id]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+
+    const idMatch = products.find((product) => preferredIds.includes(getProductId(product)));
+
+    if (idMatch) {
+      return getProductId(idMatch);
+    }
+
+    const exactNameAndImageMatch = products.find((product) => {
+      const sameName = normalizedName && this.normalizeLookup(product.name) === normalizedName;
+      const sameImage = normalizedImage && this.productImages(product).includes(normalizedImage);
+      return Boolean(sameName && sameImage);
+    });
+
+    if (exactNameAndImageMatch) {
+      return getProductId(exactNameAndImageMatch);
+    }
+
+    const nameMatch = products.find((product) => normalizedName && this.normalizeLookup(product.name) === normalizedName);
+
+    if (nameMatch) {
+      return getProductId(nameMatch);
+    }
+
+    const imageMatch = products.find((product) => normalizedImage && this.productImages(product).includes(normalizedImage));
+
+    if (imageMatch) {
+      return getProductId(imageMatch);
+    }
+
+    const descriptionMatch = products.find((product) =>
+      normalizedDescription && normalizedDescription.includes(this.normalizeLookup(product.name)),
+    );
+
+    return descriptionMatch ? getProductId(descriptionMatch) : null;
+  }
+
+  private productImages(product: ApiProductRecord): string[] {
+    return [getPrimaryImageUrl(product), getHoverImageUrl(product), getCoverImageUrl(product) ?? '']
+      .map((value) => this.normalizeLookup(value))
+      .filter(Boolean);
+  }
+
+  private normalizeLookup(value: string | null | undefined): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/^\/+/, '');
   }
 }

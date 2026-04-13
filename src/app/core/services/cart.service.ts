@@ -12,6 +12,8 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+type CartItemIdentifier = Pick<CartItem, 'id' | 'detailProductId'>;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -24,6 +26,11 @@ export class CartService {
   private readonly productsService = inject(ProductsService);
   private readonly toastService = inject(ToastService);
   private readonly storageKey = 'veloura-cart-items';
+  private readonly specialCollectionSubcategoryIds: Record<string, string> = {
+    'Arrogate-collection': '69d50edf9e39253830600b30',
+    'category-frankel': '69d506d49e39253830600ace',
+    'promise-bags': '69d4fe299e39253830600a70',
+  };
   private readonly cartItems = signal<CartItem[]>([]);
 
   readonly items = this.cartItems.asReadonly();
@@ -97,7 +104,7 @@ export class CartService {
   }
 
   removeItem(productId: string): void {
-    this.cartItems.update((items) => items.filter((item) => item.id !== productId));
+    this.removeItemByIdentifiers([productId]);
   }
 
   clearCart(): void {
@@ -151,23 +158,37 @@ export class CartService {
     return true;
   }
 
-  async removeItemWithApi(productId: string): Promise<boolean> {
+  async removeItemWithApi(item: CartItemIdentifier | string): Promise<boolean> {
     if (!this.ensureAuthenticated('Sign in to manage your cart.')) {
       return false;
     }
 
-    this.removeItem(productId);
+    const identifiers = this.getCartItemIdentifiers(item);
+    const previousItems = this.cartItems();
 
-    const result = await this.cartApiService.removeItem(productId);
+    this.removeItemByIdentifiers(identifiers);
 
-    if (!result.ok) {
-      this.toastService.show('Could not remove product', result.error, 'error', 2000);
-      void this.syncCartFromApi(true);
-      return false;
+    let lastError: string | null = null;
+
+    for (const identifier of identifiers) {
+      const result = await this.cartApiService.removeItem(identifier);
+
+      if (!result.ok) {
+        lastError = result.error;
+        continue;
+      }
+
+      return true;
     }
 
-    void this.syncCartFromApi();
-    return true;
+    this.cartItems.set(previousItems);
+    this.toastService.show(
+      'Could not remove product',
+      lastError ?? 'The cart item could not be removed right now.',
+      'error',
+      2000,
+    );
+    return false;
   }
 
   private restoreCart(): void {
@@ -268,6 +289,52 @@ export class CartService {
     );
   }
 
+  private getCartItemIdentifiers(item: CartItemIdentifier | string): string[] {
+    const identifiers =
+      typeof item === 'string'
+        ? [item]
+        : [item.detailProductId, item.id].filter((value): value is string => typeof value === 'string');
+
+    return [...new Set(identifiers.map((value) => value.trim()).filter(Boolean))];
+  }
+
+  private removeItemByIdentifiers(identifiers: string[]): void {
+    this.cartItems.update((items) =>
+      items.filter((item) => !identifiers.some((identifier) => this.matchesCartIdentifier(item, identifier))),
+    );
+  }
+
+  private matchesCartIdentifier(item: CartItem, identifier: string): boolean {
+    return item.id === identifier || item.detailProductId === identifier;
+  }
+
+  private resolveDetailProductId(
+    item: CartApiItem,
+    existingItem?: CartItem,
+    product?: Product | CollectionProduct,
+  ): string {
+    if (product?.id) {
+      return product.id;
+    }
+
+    const existingDetailProductId = existingItem?.detailProductId?.trim();
+    const itemDetailProductId = item.detailProductId?.trim();
+    const existingLooksLikeProductId =
+      Boolean(existingDetailProductId) && existingDetailProductId !== existingItem?.id;
+    const itemLooksLikeProductId =
+      Boolean(itemDetailProductId) && itemDetailProductId !== item.id;
+
+    if (existingLooksLikeProductId) {
+      return existingDetailProductId!;
+    }
+
+    if (itemLooksLikeProductId) {
+      return itemDetailProductId!;
+    }
+
+    return existingDetailProductId ?? itemDetailProductId ?? item.id;
+  }
+
   private ensureAuthenticated(message: string): boolean {
     if (this.authService.isAuthenticated()) {
       return true;
@@ -291,14 +358,18 @@ export class CartService {
       const collectionCache = new Map<string, CollectionProduct[]>();
 
       return Promise.all(items.map(async (item) => {
+        const candidateProductId = item.detailProductId ?? item.id;
         const detailFolder = item.detailFolder ?? this.inferDetailFolder({
           image: item.image ?? '',
           description: item.description ?? item.name ?? 'Product',
           detailFolder: item.detailFolder,
         });
+        const collectionProduct =
+          detailFolder ? await this.findCollectionProduct(detailFolder, item, collectionCache) : undefined;
         const product =
-          productsById.get(item.id) ??
-          (detailFolder ? await this.findCollectionProduct(detailFolder, item, collectionCache) : undefined);
+          collectionProduct ??
+          productsById.get(candidateProductId) ??
+          productsById.get(item.id);
         const existingItem = this.findExistingCartMatch(existingItems, item, detailFolder);
         const productImage =
           product
@@ -326,7 +397,7 @@ export class CartService {
 
         return {
           id: item.id,
-          detailProductId: existingItem?.detailProductId ?? product?.id ?? item.detailProductId ?? item.id,
+          detailProductId: this.resolveDetailProductId(item, existingItem, product),
           name: item.name ?? product?.name ?? 'Product',
           price: item.price ?? product?.price ?? 0,
           originalPrice: product?.originalPrice,
@@ -338,11 +409,15 @@ export class CartService {
           coverImage: productCoverImage,
           cornerImage: productCornerImage,
           conerImage: productConerImage,
-          detailFolder: detailFolder ?? productDetailFolder ?? this.inferDetailFolder({
-            image: item.image ?? productImage ?? '',
-            description: item.description ?? item.name ?? product?.name ?? 'Product',
-            detailFolder: productDetailFolder,
-          }),
+          detailFolder:
+            detailFolder ??
+            productDetailFolder ??
+            existingItem?.detailFolder ??
+            this.inferDetailFolder({
+              image: item.image ?? productImage ?? '',
+              description: item.description ?? item.name ?? product?.name ?? 'Product',
+              detailFolder: productDetailFolder,
+            }),
         };
       }));
     } catch {
@@ -356,14 +431,21 @@ export class CartService {
 
         return {
           id: item.id,
-          detailProductId: existingItem?.detailProductId ?? item.detailProductId ?? item.id,
+          detailProductId: this.resolveDetailProductId(item, existingItem),
           name: item.name ?? existingItem?.name ?? 'Product',
           price: item.price,
           quantity: item.quantity,
           description: item.description ?? existingItem?.description ?? item.name ?? 'Product',
           image: item.image ?? existingItem?.image ?? '',
           primaryImage: item.image ?? existingItem?.primaryImage ?? existingItem?.image ?? '',
-          detailFolder: detailFolder ?? existingItem?.detailFolder,
+          detailFolder:
+            detailFolder ??
+            existingItem?.detailFolder ??
+            this.inferDetailFolder({
+              image: item.image ?? existingItem?.image ?? '',
+              description: item.description ?? existingItem?.description ?? item.name ?? 'Product',
+              detailFolder: item.detailFolder,
+            }),
         };
       });
     }
@@ -377,11 +459,16 @@ export class CartService {
     const folder = detailFolder.replace(/^\/|\/$/g, '');
 
     if (!collectionCache.has(folder)) {
+      const subcategoryId = this.specialCollectionSubcategoryIds[folder];
       const products = await firstValueFrom(
-        this.collectionProductsService.getCollectionProductsWithOptions(folder, {
-          includeDeleted: true,
-          fetchAllPages: true,
-        }),
+        subcategoryId
+          ? this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, true, {
+              includeDeleted: true,
+            })
+          : this.collectionProductsService.getCollectionProductsWithOptions(folder, {
+              includeDeleted: true,
+              fetchAllPages: true,
+            }),
       );
       collectionCache.set(folder, products);
     }

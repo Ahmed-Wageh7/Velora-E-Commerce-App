@@ -106,6 +106,8 @@ export class TaxonomyService {
     const parentSlug = this.slugify(parentCategoryName);
     const slug = this.slugify(subcategoryName);
     const subcategoryRouteMap: Record<string, string> = {
+      'perfumes:arrogate': '/collections/arrogate',
+      'perfumes:frankel': '/collections/frankel',
       'perfumes:arrogate-collection': '/collections/arrogate',
       'perfumes:art-of-detecation-perfumes': '/collections/art-of-detecation-perfumes',
       'perfumes:pegasus-collection': '/collections/pegasus-collection',
@@ -193,6 +195,7 @@ const FALLBACK_TAXONOMY: TaxonomyApiCategory[] = [
     name: 'Perfumes',
     subcategories: [
       { name: 'Arrogate' },
+      { name: 'Frankel' },
       { name: 'art-of-detecation-perfumes' },
       { name: 'pegasus collection' },
       { name: 'Topacco collection' },

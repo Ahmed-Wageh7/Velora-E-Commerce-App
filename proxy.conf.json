@@ -1,0 +1,11 @@
+{
+  "/api/*": {
+    "target": "https://3ssaf-back-end-rchu.vercel.app/api",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api": ""
+    }
+  }
+}

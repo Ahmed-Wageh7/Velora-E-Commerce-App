@@ -4,7 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CartItem, CartService } from '../../../../core/services/cart.service';
-import { CollectionProductsService } from '../../../../core/services/collection-products.service';
+import { CollectionProduct, CollectionProductsService } from '../../../../core/services/collection-products.service';
+import { ProductDetailsService } from '../../../../core/services/product-details.service';
+import { ProductsService } from '../../../../core/services/products.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SiteNavbar } from '../../../../shared/components/site-navbar/site-navbar';
 
@@ -20,8 +22,14 @@ export class CheckoutPageComponent {
   private readonly authService = inject(AuthService);
   private readonly cartService = inject(CartService);
   private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productDetailsService = inject(ProductDetailsService);
+  private readonly productsService = inject(ProductsService);
   private readonly toastService = inject(ToastService);
-  private readonly promiseBagsSubcategoryId = '69d4fe299e39253830600a70';
+  private readonly specialCollectionSubcategoryIds: Record<string, string> = {
+    'Arrogate-collection': '69d50edf9e39253830600b30',
+    'category-frankel': '69d506d49e39253830600ace',
+    'promise-bags': '69d4fe299e39253830600a70',
+  };
   protected activeLineItemId: string | null = null;
   protected activeLineItemAction: 'increase' | 'decrease' | 'remove' | null = null;
 
@@ -40,21 +48,20 @@ export class CheckoutPageComponent {
     }
   }
 
-  protected getProductRoute(item: CartItem): (number | string)[] {
-    const productId = item.detailProductId ?? item.id;
-    return item.detailFolder ? ['/product', item.detailFolder, productId] : ['/product', productId];
-  }
-
   protected async openProductDetails(item: CartItem, event: Event): Promise<void> {
     event.preventDefault();
-
-    if (item.detailFolder === 'promise-bags') {
-      const productId = await this.resolvePromiseBagProductId(item);
-      await this.router.navigate(['/product', 'promise-bags', productId ?? item.detailProductId ?? item.id]);
-      return;
-    }
-
-    await this.router.navigate(this.getProductRoute(item));
+    await this.router.navigate(await this.resolveProductRoute(item), {
+      state: {
+        cartProductHint: {
+          id: item.id,
+          detailProductId: item.detailProductId,
+          name: item.name,
+          image: item.image,
+          description: item.description,
+          detailFolder: item.detailFolder,
+        },
+      },
+    });
   }
 
   protected isProcessingItem(productId: string, action: 'increase' | 'decrease' | 'remove'): boolean {
@@ -81,12 +88,11 @@ export class CheckoutPageComponent {
     this.toastService.show('Cart updated', 'Item quantity decreased.', 'info', 1600);
   }
 
-  protected async remove(productId: string): Promise<void> {
-    this.activeLineItemId = productId;
+  protected async remove(item: CartItem): Promise<void> {
+    this.activeLineItemId = item.id;
     this.activeLineItemAction = 'remove';
     this.changeDetectorRef.detectChanges();
-    await this.waitForButtonFeedback();
-    const removed = await this.cartService.removeItemWithApi(productId);
+    const removed = await this.cartService.removeItemWithApi(item);
     this.clearLineItemState();
 
     if (removed) {
@@ -117,25 +123,118 @@ export class CheckoutPageComponent {
     this.changeDetectorRef.detectChanges();
   }
 
-  private async resolvePromiseBagProductId(item: CartItem): Promise<string | null> {
+  private async resolveProductRoute(item: CartItem): Promise<(number | string)[]> {
+    const productId = await this.resolveProductId(item);
+    const folder = item.detailFolder?.trim();
+
+    if (folder) {
+      const recoveredProduct = await firstValueFrom(this.productDetailsService.recoverProductDetails(folder, item));
+
+      if (recoveredProduct) {
+        return ['/product', folder, recoveredProduct.id];
+      }
+    }
+
+    return folder ? ['/product', folder, productId] : ['/product', productId];
+  }
+
+  private async resolveProductId(item: CartItem): Promise<string> {
+    if (item.detailFolder) {
+      const collectionProductId = await this.resolveCollectionProductId(item);
+
+      if (collectionProductId) {
+        return collectionProductId;
+      }
+    }
+
+    const preferredId = item.detailProductId?.trim();
+
+    if (preferredId) {
+      return preferredId;
+    }
+
+    const catalogProducts = await firstValueFrom(this.productsService.getProducts());
+    const catalogMatch = catalogProducts.find((product) => {
+      const sameName = this.normalizeLookup(product.name) === this.normalizeLookup(item.name);
+      const sameImage = this.normalizeLookup(product.image) === this.normalizeLookup(item.image);
+      return sameName || sameImage;
+    });
+
+    return catalogMatch?.id ?? item.id;
+  }
+
+  private async resolveCollectionProductId(item: CartItem): Promise<string | null> {
+    const folder = item.detailFolder?.trim();
+
+    if (!folder) {
+      return null;
+    }
+
     try {
-      const products = await firstValueFrom(
-        this.collectionProductsService.getProductsBySubcategoryId(this.promiseBagsSubcategoryId, true, {
-          includeDeleted: true,
-        }),
-      );
-      const normalizedName = this.normalizeLookup(item.name);
-      const normalizedImage = this.normalizeLookup(item.image);
-      const match = products.find((product) => {
-        const sameName = normalizedName && this.normalizeLookup(product.name) === normalizedName;
-        const sameImage = normalizedImage && this.normalizeLookup(product.primaryImageUrl) === normalizedImage;
-        return sameName || sameImage;
-      });
+      const products = await firstValueFrom(this.getCollectionProductsForFolder(folder));
+      const match = this.findMatchingCollectionProductId(item, products);
 
       return match?.id ?? null;
     } catch {
       return null;
     }
+  }
+
+  private getCollectionProductsForFolder(folder: string) {
+    const subcategoryId = this.specialCollectionSubcategoryIds[folder];
+
+    if (subcategoryId) {
+      return this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, true, {
+        includeDeleted: true,
+      });
+    }
+
+    return this.collectionProductsService.getCollectionProductsWithOptions(folder, {
+      includeDeleted: true,
+      fetchAllPages: true,
+    });
+  }
+
+  private findMatchingCollectionProductId(item: CartItem, products: CollectionProduct[]): CollectionProduct | null {
+    const normalizedName = this.normalizeLookup(item.name);
+    const normalizedImage = this.normalizeLookup(item.image);
+    const normalizedDescription = this.normalizeLookup(item.description);
+
+    const exactNameAndImageMatch = products.find((product) => {
+      const sameName = normalizedName && this.normalizeLookup(product.name) === normalizedName;
+      const sameImage =
+        normalizedImage &&
+        [product.primaryImageUrl, product.hoverImageUrl, product.coverImageUrl]
+          .map((value) => this.normalizeLookup(value))
+          .includes(normalizedImage);
+
+      return Boolean(sameName && sameImage);
+    });
+
+    if (exactNameAndImageMatch) {
+      return exactNameAndImageMatch;
+    }
+
+    const nameMatch = products.find((product) => normalizedName && this.normalizeLookup(product.name) === normalizedName);
+
+    if (nameMatch) {
+      return nameMatch;
+    }
+
+    const imageMatch = products.find((product) =>
+      normalizedImage &&
+      [product.primaryImageUrl, product.hoverImageUrl, product.coverImageUrl]
+        .map((value) => this.normalizeLookup(value))
+        .includes(normalizedImage),
+    );
+
+    if (imageMatch) {
+      return imageMatch;
+    }
+
+    return (
+      products.find((product) => normalizedDescription && normalizedDescription.includes(this.normalizeLookup(product.name))) ?? null
+    );
   }
 
   private normalizeLookup(value: string | undefined): string {

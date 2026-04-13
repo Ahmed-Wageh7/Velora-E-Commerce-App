@@ -18,7 +18,7 @@
               class="action-button checkout-remove checkout-remove-top"
               [class.is-loading]="isProcessingItem(item.id, 'remove')"
               [disabled]="isProcessingItem(item.id, 'remove')"
-              (click)="remove(item.id)"
+              (click)="remove(item)"
               aria-label="Remove item"
             >
               <span class="action-button-label">
@@ -33,7 +33,7 @@
             <div class="checkout-card-main">
               <a
                 class="checkout-card-media media-hover-frame"
-                [routerLink]="getProductRoute(item)"
+                href=""
                 (click)="openProductDetails(item, $event)"
                 [attr.aria-label]="'Open ' + item.name"
               >
