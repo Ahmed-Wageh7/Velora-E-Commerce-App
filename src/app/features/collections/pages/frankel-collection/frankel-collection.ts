@@ -17,7 +17,7 @@ import { SunglassesCollectionPageComponent } from '../../components/sunglasses-c
       [includeDeletedProducts]="true"
       [fetchAllSubcategoryPages]="true"
       [minimumLoadingMs]="650"
-      heroImageFile="/frankel-headd.jpg"
+      heroImageFile="/collections/heroes/frankel-collection.jpg"
     />
   `,
 })

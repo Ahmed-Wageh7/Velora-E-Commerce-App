@@ -18,7 +18,7 @@ import { SunglassesCollectionPageComponent } from '../../components/sunglasses-c
       [minimumLoadingMs]="650"
       [useCareShimmer]="true"
       [heroFullWidth]="true"
-      heroImageFile="/men-head.webp"
+      heroImageFile="/collections/heroes/men-sunglasses.webp"
     />
   `,
 })

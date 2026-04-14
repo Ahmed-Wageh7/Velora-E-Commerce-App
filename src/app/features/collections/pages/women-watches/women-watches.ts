@@ -10,7 +10,7 @@ import { WatchCollectionPageComponent } from "../../components/watch-collection-
       breadcrumbLabel="Women's Watches"
       collectionFolder="women-watches"
       descriptionLabel="women watch"
-      heroImageFile="women-head-for-watches.webp"
+      heroImageFile="/collections/heroes/women-watches.webp"
       [fullWidthHero]="true"
       categoryName="Assaf Watches"
       subcategoryName="women's watches"

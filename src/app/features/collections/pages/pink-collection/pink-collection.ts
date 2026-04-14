@@ -22,7 +22,7 @@ export class PinkCollectionPageComponent {
   private readonly pageSize = 12;
   private readonly loadingProductIds = new Set<string>();
   protected readonly heroImageUrl = '/pink-collection/pink-head.webp';
-  protected readonly promoImageUrl = '/pink.webp';
+  protected readonly promoImageUrl = '/collections/promos/pink-collection.webp';
   protected isShowingMore = false;
 
   protected readonly sortOptions = ['Our Suggestions', 'Newest', 'Price: Low to High', 'Price: High to Low'];

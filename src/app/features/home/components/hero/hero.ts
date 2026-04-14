@@ -13,23 +13,23 @@ export class Hero implements OnInit, OnDestroy {
   readonly currentSlide = signal(0);
   readonly slides = [
     {
-      desktopSrc: '/Hero-Desc/Aura.webp',
-      mobileSrc: '/Hero-Mob/Aura.webp',
+      desktopSrc: '/home/hero/desktop/aura.webp',
+      mobileSrc: '/home/hero/mobile/aura.webp',
       alt: 'Veloura Aura collection banner',
     },
     {
-      desktopSrc: '/Hero-Desc/cyber-sport.webp',
-      mobileSrc: '/Hero-Mob/cyber-sport.webp',
+      desktopSrc: '/home/hero/desktop/cyber-sport.webp',
+      mobileSrc: '/home/hero/mobile/cyber-sport.webp',
       alt: 'Veloura cyber sport collection banner',
     },
     {
-      desktopSrc: '/Hero-Desc/lady-queen.webp',
-      mobileSrc: '/Hero-Mob/lady-queen-mobile.webp',
+      desktopSrc: '/home/hero/desktop/lady-queen.webp',
+      mobileSrc: '/home/hero/mobile/lady-queen.webp',
       alt: 'Veloura lady queen collection banner',
     },
     {
-      desktopSrc: '/Hero-Desc/promise-gold.webp',
-      mobileSrc: '/Hero-Mob/promise-gold.webp',
+      desktopSrc: '/home/hero/desktop/promise-gold.webp',
+      mobileSrc: '/home/hero/mobile/promise-gold.webp',
       alt: 'Veloura promise gold collection banner',
     },
   ];

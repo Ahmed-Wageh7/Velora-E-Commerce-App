@@ -10,7 +10,7 @@ import { BagCollectionPageComponent } from '../../components/bag-collection-page
       breadcrumbLabel="Promise Bags"
       collectionFolder="promise-bags"
       descriptionLabel="promise bag"
-      heroImageFile="/promise.webp"
+      heroImageFile="/collections/promos/promise-bags.webp"
       subcategoryId="69d4fe299e39253830600a70"
       [includeDeletedProducts]="true"
       [fetchAllPages]="true"

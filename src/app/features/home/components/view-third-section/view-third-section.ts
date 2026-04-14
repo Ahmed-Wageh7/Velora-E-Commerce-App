@@ -9,8 +9,8 @@ import { RouterLink } from '@angular/router';
 })
 export class ViewThirdSectionComponent {
   protected readonly imageUrls = {
-    primaryLeft: '/third-1.webp',
-    primaryRight: '/third-2.webp',
-    featureWide: '/third-3.webp',
+    primaryLeft: '/home/editorial/third-1.webp',
+    primaryRight: '/home/editorial/third-2.webp',
+    featureWide: '/home/editorial/third-3.webp',
   };
 }

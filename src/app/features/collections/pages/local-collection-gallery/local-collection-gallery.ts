@@ -158,7 +158,9 @@ export class LocalCollectionGalleryPageComponent {
   }
 
   protected getNewCovenantPromoImageUrl(index: 1 | 2): string {
-    return index === 1 ? '/new-constant-head-1.webp' : '/new-constant-head-2.jpg';
+    return index === 1
+      ? '/collections/feature-heads/feature-head-1.webp'
+      : '/collections/feature-heads/feature-head-2.jpg';
   }
 
   protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
