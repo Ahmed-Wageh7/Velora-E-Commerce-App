@@ -3,6 +3,31 @@
 
   <main class="checkout-main">
     <section class="checkout-shell">
+      @if (submittedOrder) {
+      <section class="checkout-feedback checkout-feedback--success" aria-live="polite">
+        <div>
+          <p class="checkout-feedback-kicker">Order submitted</p>
+          <h1 class="checkout-feedback-title">We received your order.</h1>
+          <p class="checkout-feedback-copy">{{ submittedOrder.message }}</p>
+        </div>
+
+        <div class="checkout-feedback-meta">
+          <div>
+            <span>Status</span>
+            <strong>{{ submittedOrder.status }}</strong>
+          </div>
+          <div>
+            <span>Payment</span>
+            <strong>{{ submittedOrder.paymentMethod }}</strong>
+          </div>
+          <div>
+            <span>Order ID</span>
+            <strong>{{ submittedOrder.id || 'Pending assignment' }}</strong>
+          </div>
+        </div>
+      </section>
+      }
+
       <div class="checkout-layout" [class.checkout-layout--empty]="!cartItems().length">
         <div id="cart" class="checkout-items">
           @if (cartItems().length) {
@@ -17,7 +42,7 @@
               type="button"
               class="action-button checkout-remove checkout-remove-top"
               [class.is-loading]="isProcessingItem(item.id, 'remove')"
-              [disabled]="isProcessingItem(item.id, 'remove')"
+              [disabled]="activeLineItemAction !== null || isCheckoutBusy"
               (click)="remove(item)"
               aria-label="Remove item"
             >
@@ -60,8 +85,8 @@
                   type="button"
                   class="action-button quantity-chip-button"
                   [class.quantity-chip-button--busy]="isProcessingItem(item.id, 'decrease')"
-                  [disabled]="isProcessingItem(item.id, 'decrease')"
-                  (click)="decrease(item.id)"
+                  [disabled]="activeLineItemAction !== null || isCheckoutBusy"
+                  (click)="decrease(item)"
                 >
                   @if (isProcessingItem(item.id, 'decrease')) {
                   <span class="action-button-spinner inline-block" aria-hidden="true"></span>
@@ -76,8 +101,8 @@
                   type="button"
                   class="action-button quantity-chip-button"
                   [class.quantity-chip-button--busy]="isProcessingItem(item.id, 'increase')"
-                  [disabled]="isProcessingItem(item.id, 'increase')"
-                  (click)="increase(item.id)"
+                  [disabled]="activeLineItemAction !== null || isCheckoutBusy"
+                  (click)="increase(item)"
                 >
                   @if (isProcessingItem(item.id, 'increase')) {
                   <span class="action-button-spinner inline-block" aria-hidden="true"></span>
@@ -113,34 +138,113 @@
 
         @if (cartItems().length) {
         <aside id="summary" class="checkout-summary">
-          <p class="checkout-summary-kicker">Order Summary</p>
+          <form class="checkout-order-form" [formGroup]="orderForm" (ngSubmit)="confirmPurchase()">
+            <p class="checkout-summary-kicker">Order Summary</p>
 
-          <div class="checkout-summary-block">
-            <div class="summary-row">
-              <span>Total items amount</span>
-              <span>{{ subtotal() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            <div class="checkout-summary-block">
+              <div class="summary-row">
+                <span>Items</span>
+                <span>{{ itemCount() }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Total items amount</span>
+                <span>{{ subtotal() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+              </div>
             </div>
-          </div>
 
-          <div class="checkout-summary-block checkout-summary-block--final">
-            <div class="summary-row">
-              <span>Final total amount</span>
-              <span>{{ total() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            <div class="checkout-summary-block">
+              <p class="checkout-form-kicker">Payment method</p>
+
+              <label class="checkout-method-card">
+                <input type="radio" formControlName="paymentMethod" value="cod" />
+                <span>
+                  <strong>Cash on delivery</strong>
+                  <small>Pay when your order arrives.</small>
+                </span>
+              </label>
+
+              <label class="checkout-method-card">
+                <input type="radio" formControlName="paymentMethod" value="stripe" />
+                <span>
+                  <strong>Pay with card</strong>
+                  <small>Continue to the secure payment page after submitting.</small>
+                </span>
+              </label>
             </div>
-            <p class="checkout-vat">* VAT Inclusive</p>
-          </div>
 
-          <button
-            type="button"
-            class="action-button checkout-confirm"
-            [class.is-loading]="false"
-            [disabled]="false"
-            (click)="confirmPurchase()"
-          >
-            <span class="action-button-label">
-              <span>Submit order</span>
-            </span>
-          </button>
+            <div class="checkout-summary-block" formGroupName="shippingAddress">
+              <p class="checkout-form-kicker">Shipping address</p>
+
+              <div class="checkout-address-grid">
+                <label class="checkout-field">
+                  <span>Street</span>
+                  <input type="text" formControlName="street" placeholder="Nasr City" />
+                  @if (hasControlError(shippingAddressForm.controls.street, 'required')) {
+                  <small class="checkout-field-error">Street is required.</small>
+                  } @else if (hasControlError(shippingAddressForm.controls.street, 'minlength')) {
+                  <small class="checkout-field-error">Street looks too short.</small>
+                  }
+                </label>
+
+                <label class="checkout-field">
+                  <span>City</span>
+                  <input type="text" formControlName="city" placeholder="Cairo" />
+                  @if (hasControlError(shippingAddressForm.controls.city, 'required')) {
+                  <small class="checkout-field-error">City is required.</small>
+                  } @else if (hasControlError(shippingAddressForm.controls.city, 'minlength')) {
+                  <small class="checkout-field-error">City looks too short.</small>
+                  }
+                </label>
+
+                <label class="checkout-field">
+                  <span>Country</span>
+                  <input type="text" formControlName="country" placeholder="Egypt" />
+                  @if (hasControlError(shippingAddressForm.controls.country, 'required')) {
+                  <small class="checkout-field-error">Country is required.</small>
+                  } @else if (hasControlError(shippingAddressForm.controls.country, 'minlength')) {
+                  <small class="checkout-field-error">Country looks too short.</small>
+                  }
+                </label>
+
+                <label class="checkout-field">
+                  <span>Postal code</span>
+                  <input type="text" formControlName="postalCode" placeholder="11765" />
+                  @if (hasControlError(shippingAddressForm.controls.postalCode, 'required')) {
+                  <small class="checkout-field-error">Postal code is required.</small>
+                  } @else if (hasControlError(shippingAddressForm.controls.postalCode, 'minlength')) {
+                  <small class="checkout-field-error">Postal code looks too short.</small>
+                  }
+                </label>
+              </div>
+            </div>
+
+            <div class="checkout-summary-block checkout-summary-block--final">
+              <div class="summary-row">
+                <span>Final total amount</span>
+                <span>{{ total() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+              </div>
+              <p class="checkout-vat">* VAT Inclusive</p>
+            </div>
+
+            @if (orderErrorMessage) {
+            <p class="checkout-submit-error" aria-live="assertive">{{ orderErrorMessage }}</p>
+            }
+
+            <button
+              type="submit"
+              class="action-button checkout-confirm"
+              [class.is-loading]="isCheckoutBusy"
+              [disabled]="isCheckoutBusy || activeLineItemAction !== null"
+            >
+              <span class="action-button-label">
+                @if (isCheckoutBusy) {
+                <span class="action-button-spinner" aria-hidden="true"></span>
+                } @else {
+                <span>Submit order</span>
+                }
+              </span>
+            </button>
+          </form>
         </aside>
         }
       </div>

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 import { ApiProductRecord, getProductId, getProductOriginalPrice, getProductQuantity, getPrimaryImageUrl } from './product-api.utils';
 import { ProductCollectionsService } from './product-collections.service';
 
@@ -26,11 +26,15 @@ export interface PromiseHomeProduct {
 })
 export class PromiseHomeProductsService {
   private readonly productCollectionsService = inject(ProductCollectionsService);
+  private readonly products$ = this.productCollectionsService
+    .getProductsByQuery({ categoryName: 'Assaf Bags', subcategoryName: 'promise bag' })
+    .pipe(
+      map((products) => products.map((product) => this.toProduct(product))),
+      shareReplay(1),
+    );
 
   getProducts(): Observable<PromiseHomeProduct[]> {
-    return this.productCollectionsService
-      .getProductsByQuery({ categoryName: 'Assaf Bags', subcategoryName: 'promise bag' })
-      .pipe(map((products) => products.map((product) => this.toProduct(product))));
+    return this.products$;
   }
 
   private toProduct(product: PromiseHomeProductApiRecord): PromiseHomeProduct {

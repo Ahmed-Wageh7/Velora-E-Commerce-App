@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, switchMap, throwError } from 'rxjs';
 import {
   ApiCategoryRef,
   ApiProductRecord,
@@ -99,6 +99,7 @@ export interface ProductLookupHint {
 export class ProductDetailsService {
   private readonly http = inject(HttpClient);
   private readonly productCollectionsService = inject(ProductCollectionsService);
+  private readonly productDetailsCache = new Map<string, Observable<ProductDetails | null>>();
   private readonly specialCollectionSubcategoryIds: Record<string, string> = {
     'Arrogate-collection': '69d50edf9e39253830600b30',
     'category-frankel': '69d506d49e39253830600ace',
@@ -107,18 +108,21 @@ export class ProductDetailsService {
 
   getProductDetails(folder: string, id: string): Observable<ProductDetails | null> {
     const normalizedFolder = folder.replace(/^\/|\/$/g, '');
+    const cacheKey = `${normalizedFolder}:${id}`;
 
-    return this.http.get<ProductDetailsApiResponse | ProductDetailsApiRecord>(buildProductByIdUrl(id)).pipe(
-      map((response) => this.extractProductRecord(response)),
-      switchMap((product) => {
-        if (!product) {
-          return of(null);
-        }
+    return this.getOrCreateCachedDetailsRequest(cacheKey, () =>
+      this.http.get<ProductDetailsApiResponse | ProductDetailsApiRecord>(buildProductByIdUrl(id)).pipe(
+        map((response) => this.extractProductRecord(response)),
+        switchMap((product) => {
+          if (!product) {
+            return of(null);
+          }
 
-        return this.getRelatedProducts(product).pipe(
-          map((relatedProducts) => this.toProductDetails(normalizedFolder, product, relatedProducts)),
-        );
-      }),
+          return this.getRelatedProducts(product).pipe(
+            map((relatedProducts) => this.toProductDetails(normalizedFolder, product, relatedProducts)),
+          );
+        }),
+      ),
     );
   }
 
@@ -127,11 +131,7 @@ export class ProductDetailsService {
     const subcategoryId = this.specialCollectionSubcategoryIds[normalizedFolder];
     const products$ = subcategoryId
       ? this.productCollectionsService.getProductsBySubcategoryId(subcategoryId, true, { includeDeleted: true })
-      : this.productCollectionsService.getProductsByQuery(undefined, undefined).pipe(
-          switchMap(() =>
-            this.productCollectionsService.getProductsByQuery(undefined),
-          ),
-        );
+      : this.productCollectionsService.getAllProducts({ includeDeleted: true });
 
     return products$.pipe(
       map((products) => this.findMatchingProductId(products, hint)),
@@ -478,5 +478,27 @@ export class ProductDetailsService {
       .toLowerCase()
       .replace(/^https?:\/\/[^/]+/i, '')
       .replace(/^\/+/, '');
+  }
+
+  private getOrCreateCachedDetailsRequest(
+    cacheKey: string,
+    createRequest: () => Observable<ProductDetails | null>,
+  ): Observable<ProductDetails | null> {
+    const cached = this.productDetailsCache.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = createRequest().pipe(
+      catchError((error) => {
+        this.productDetailsCache.delete(cacheKey);
+        return throwError(() => error);
+      }),
+      shareReplay(1),
+    );
+
+    this.productDetailsCache.set(cacheKey, request$);
+    return request$;
   }
 }

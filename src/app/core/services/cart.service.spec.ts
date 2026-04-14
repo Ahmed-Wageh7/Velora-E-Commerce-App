@@ -12,6 +12,8 @@ import { ToastService } from './toast.service';
 
 describe('CartService', () => {
   const storageKey = 'veloura-cart-items';
+  const guestStorageKey = `${storageKey}:guest`;
+  const userStorageKey = (userId: string) => `${storageKey}:${userId}`;
   const product: Product = {
     id: '101',
     name: 'Promise Bag',
@@ -22,8 +24,10 @@ describe('CartService', () => {
   };
 
   const authState = signal(false);
+  const currentUserState = signal<{ id: string; email: string } | null>(null);
   const authServiceStub = {
     isAuthenticated: authState.asReadonly(),
+    currentUser: currentUserState.asReadonly(),
   };
   const cartApiServiceStub = {
     addToCart: vi.fn(),
@@ -45,6 +49,7 @@ describe('CartService', () => {
     TestBed.resetTestingModule();
     window.localStorage.clear();
     authState.set(false);
+    currentUserState.set(null);
     cartApiServiceStub.addToCart.mockReset();
     cartApiServiceStub.getCart.mockReset();
     cartApiServiceStub.removeItem.mockReset();
@@ -81,7 +86,7 @@ describe('CartService', () => {
     expect(service.items()[0].quantity).toBe(2);
     expect(service.total()).toBe(500);
 
-    const savedCart = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]');
+    const savedCart = JSON.parse(window.localStorage.getItem(guestStorageKey) ?? '[]');
     expect(savedCart).toHaveLength(1);
     expect(savedCart[0].quantity).toBe(2);
     expect(savedCart[0].detailFolder).toBe('promise-bags');
@@ -97,6 +102,8 @@ describe('CartService', () => {
         },
       ]),
     );
+    window.localStorage.setItem(guestStorageKey, window.localStorage.getItem(storageKey) ?? '[]');
+    window.localStorage.removeItem(storageKey);
 
     const service = TestBed.inject(CartService);
 
@@ -191,6 +198,8 @@ describe('CartService', () => {
         },
       ]),
     );
+    window.localStorage.setItem(guestStorageKey, window.localStorage.getItem(storageKey) ?? '[]');
+    window.localStorage.removeItem(storageKey);
 
     const service = TestBed.inject(CartService);
 
@@ -231,6 +240,8 @@ describe('CartService', () => {
         },
       ]),
     );
+    window.localStorage.setItem(guestStorageKey, window.localStorage.getItem(storageKey) ?? '[]');
+    window.localStorage.removeItem(storageKey);
 
     const service = TestBed.inject(CartService);
 
@@ -327,6 +338,8 @@ describe('CartService', () => {
         },
       ]),
     );
+    window.localStorage.setItem(guestStorageKey, window.localStorage.getItem(storageKey) ?? '[]');
+    window.localStorage.removeItem(storageKey);
 
     const service = TestBed.inject(CartService);
 
@@ -349,5 +362,37 @@ describe('CartService', () => {
 
     expect(service.items()).toHaveLength(1);
     expect(service.items()[0].detailFolder).toBe('promise-bags');
+  });
+
+  it('keeps cart storage isolated when switching between signed-in accounts', async () => {
+    window.localStorage.setItem(
+      userStorageKey('user-1'),
+      JSON.stringify([
+        {
+          ...product,
+          quantity: 1,
+        },
+      ]),
+    );
+    window.localStorage.setItem(userStorageKey('user-2'), JSON.stringify([]));
+
+    authState.set(true);
+    currentUserState.set({ id: 'user-1', email: 'user-1@example.com' });
+
+    const service = TestBed.inject(CartService);
+
+    expect(service.items()).toHaveLength(1);
+
+    service.removeItem(product.id);
+    TestBed.flushEffects();
+
+    expect(service.items()).toEqual([]);
+    expect(JSON.parse(window.localStorage.getItem(userStorageKey('user-1')) ?? '[]')).toEqual([]);
+
+    currentUserState.set({ id: 'user-2', email: 'user-2@example.com' });
+    TestBed.flushEffects();
+
+    expect(service.items()).toEqual([]);
+    expect(JSON.parse(window.localStorage.getItem(userStorageKey('user-2')) ?? '[]')).toEqual([]);
   });
 });

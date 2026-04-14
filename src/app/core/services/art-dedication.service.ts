@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 import {
   ApiProductRecord,
   getCoverImageUrl,
@@ -33,11 +33,15 @@ export interface ArtDedicationProduct {
 export class ArtDedicationService {
   private readonly productCollectionsService = inject(ProductCollectionsService);
   private readonly homeSubcategoryId = '69d4fe2b9e39253830600a75';
+  private readonly artDedicationProducts$ = this.productCollectionsService
+    .getProductsBySubcategoryId(this.homeSubcategoryId, true, { includeDeleted: true })
+    .pipe(
+      map((products) => products.map((product) => this.toArtDedicationProduct(product))),
+      shareReplay(1),
+    );
 
   getArtDedicationProducts(): Observable<ArtDedicationProduct[]> {
-    return this.productCollectionsService
-      .getProductsBySubcategoryId(this.homeSubcategoryId, true, { includeDeleted: true })
-      .pipe(map((products) => products.map((product) => this.toArtDedicationProduct(product))));
+    return this.artDedicationProducts$;
   }
 
   private toArtDedicationProduct(product: ArtDedicationApiRecord): ArtDedicationProduct {

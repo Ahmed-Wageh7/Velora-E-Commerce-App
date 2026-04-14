@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, shareReplay, throwError } from 'rxjs';
 import {
   ApiProductRecord,
   CollectionQuery,
@@ -54,10 +54,16 @@ export interface CollectionProduct {
 })
 export class CollectionProductsService {
   private readonly productCollectionsService = inject(ProductCollectionsService);
+  private readonly queryCache = new Map<string, Observable<CollectionProduct[]>>();
+  private readonly subcategoryCache = new Map<string, Observable<CollectionProduct[]>>();
 
   getProductsByQuery(query?: CollectionQuery, options?: CollectionProductOptions): Observable<CollectionProduct[]> {
-    return this.productCollectionsService.getProductsByQuery(query, options).pipe(
-      map((products) => products.map((product) => this.toCollectionProduct(product, options))),
+    const cacheKey = JSON.stringify({ query, options });
+
+    return this.getOrCreateCachedRequest(this.queryCache, cacheKey, () =>
+      this.productCollectionsService.getProductsByQuery(query, options).pipe(
+        map((products) => products.map((product) => this.toCollectionProduct(product, options))),
+      ),
     );
   }
 
@@ -66,8 +72,12 @@ export class CollectionProductsService {
     fetchAllPages = false,
     options?: CollectionProductOptions,
   ): Observable<CollectionProduct[]> {
-    return this.productCollectionsService.getProductsBySubcategoryId(subcategoryId, fetchAllPages, options).pipe(
-      map((products) => products.map((product) => this.toCollectionProduct(product, options))),
+    const cacheKey = JSON.stringify({ subcategoryId, fetchAllPages, options });
+
+    return this.getOrCreateCachedRequest(this.subcategoryCache, cacheKey, () =>
+      this.productCollectionsService.getProductsBySubcategoryId(subcategoryId, fetchAllPages, options).pipe(
+        map((products) => products.map((product) => this.toCollectionProduct(product, options))),
+      ),
     );
   }
 
@@ -125,6 +135,29 @@ export class CollectionProductsService {
       coverImageUrl,
       cornerImageUrl,
     };
+  }
+
+  private getOrCreateCachedRequest(
+    cache: Map<string, Observable<CollectionProduct[]>>,
+    cacheKey: string,
+    createRequest: () => Observable<CollectionProduct[]>,
+  ): Observable<CollectionProduct[]> {
+    const cached = cache.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = createRequest().pipe(
+      catchError((error) => {
+        cache.delete(cacheKey);
+        return throwError(() => error);
+      }),
+      shareReplay(1),
+    );
+
+    cache.set(cacheKey, request$);
+    return request$;
   }
 }
 

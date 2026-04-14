@@ -1,0 +1,99 @@
+<div class="stripe-payment-page">
+  <app-site-navbar />
+
+  <main class="stripe-payment-main">
+    <section class="stripe-payment-shell">
+      @if (submittedOrder) {
+      <section class="stripe-payment-feedback" aria-live="polite">
+        <div>
+          <p class="stripe-payment-kicker">Payment complete</p>
+          <h1 class="stripe-payment-title">Your order has been placed.</h1>
+          <p class="stripe-payment-copy">{{ submittedOrder.message }}</p>
+        </div>
+
+        <div class="stripe-payment-meta">
+          <div>
+            <span>Status</span>
+            <strong>{{ submittedOrder.status }}</strong>
+          </div>
+          <div>
+            <span>Payment</span>
+            <strong>{{ submittedOrder.paymentMethod }}</strong>
+          </div>
+          <div>
+            <span>Order ID</span>
+            <strong>{{ submittedOrder.id || 'Pending assignment' }}</strong>
+          </div>
+        </div>
+      </section>
+      } @else {
+      <div class="stripe-payment-layout">
+        <section class="stripe-payment-card">
+          <p class="stripe-payment-kicker">Secure payment</p>
+          <h1 class="stripe-payment-title">Complete your card payment</h1>
+          <p class="stripe-payment-copy">
+            Review your order and pay securely with Stripe to finish checkout.
+          </p>
+
+          @if (!isStripeReady && paymentErrorMessage) {
+          <div class="stripe-payment-warning" aria-live="polite">
+            <strong>Stripe is blocked in this tab.</strong>
+            <p>
+              Disable ad blockers, privacy extensions, or browser shields for this site, then
+              refresh and try again. If needed, use an incognito window where it is already
+              working.
+            </p>
+          </div>
+          }
+
+          <div class="stripe-payment-element-shell">
+            <div id="card-element" #cardElementHost></div>
+          </div>
+
+          @if (paymentErrorMessage) {
+          <p class="stripe-payment-error" aria-live="assertive">
+            {{ paymentErrorMessage }}
+          </p>
+          }
+
+          <div class="stripe-payment-actions">
+            <a routerLink="/checkout" class="stripe-payment-secondary">Back to checkout</a>
+
+            <button
+              type="button"
+              class="stripe-payment-submit"
+              [disabled]="isProcessingPayment || !isStripeReady"
+              (click)="submitStripePayment()"
+            >
+              @if (isProcessingPayment) {
+              <span class="action-button-spinner" aria-hidden="true"></span>
+              } @else {
+              <span>Pay {{ checkoutTotal | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+              }
+            </button>
+          </div>
+        </section>
+
+        <aside class="stripe-payment-summary">
+          <p class="stripe-payment-kicker">Order summary</p>
+
+          <div class="stripe-payment-summary-row">
+            <span>Items</span>
+            <strong>{{ checkoutItemCount }}</strong>
+          </div>
+
+          <div class="stripe-payment-summary-row">
+            <span>Payment method</span>
+            <strong>Stripe</strong>
+          </div>
+
+          <div class="stripe-payment-summary-row">
+            <span>Total</span>
+            <strong>{{ checkoutTotal | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+        </aside>
+      </div>
+      }
+    </section>
+  </main>
+</div>

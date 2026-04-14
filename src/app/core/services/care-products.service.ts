@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 import {
   ApiProductRecord,
   getCoverImageUrl,
@@ -34,11 +34,15 @@ export interface CareProduct {
 export class CareProductsService {
   private readonly productCollectionsService = inject(ProductCollectionsService);
   private readonly careSubcategoryId = '69d534779e39253830600cc2';
+  private readonly careProducts$ = this.productCollectionsService
+    .getProductsBySubcategoryId(this.careSubcategoryId, true, { includeDeleted: true })
+    .pipe(
+      map((products) => products.map((product) => this.toCareProduct(product))),
+      shareReplay(1),
+    );
 
   getCareProducts(): Observable<CareProduct[]> {
-    return this.productCollectionsService
-      .getProductsBySubcategoryId(this.careSubcategoryId, true, { includeDeleted: true })
-      .pipe(map((products) => products.map((product) => this.toCareProduct(product))));
+    return this.careProducts$;
   }
 
   private toCareProduct(product: CareProductApiRecord): CareProduct {

@@ -26,12 +26,15 @@ export class CartService {
   private readonly productsService = inject(ProductsService);
   private readonly toastService = inject(ToastService);
   private readonly storageKey = 'veloura-cart-items';
+  private readonly legacyStorageKey = this.storageKey;
+  private readonly guestStorageScope = 'guest';
   private readonly specialCollectionSubcategoryIds: Record<string, string> = {
     'Arrogate-collection': '69d50edf9e39253830600b30',
     'category-frankel': '69d506d49e39253830600ace',
     'promise-bags': '69d4fe299e39253830600a70',
   };
   private readonly cartItems = signal<CartItem[]>([]);
+  private activeStorageKey = '';
 
   readonly items = this.cartItems.asReadonly();
   readonly total = computed(() =>
@@ -40,16 +43,24 @@ export class CartService {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.restoreCart();
+      this.restoreScopedCart();
 
       effect(() => {
-        window.localStorage.setItem(this.storageKey, JSON.stringify(this.cartItems()));
+        this.restoreScopedCart();
+
+        if (this.authService.isAuthenticated()) {
+          void this.syncCartFromApi(false, true);
+        }
       });
 
       effect(() => {
-        if (this.authService.isAuthenticated()) {
-          void this.syncCartFromApi();
+        const storageKey = this.activeStorageKey;
+
+        if (!storageKey) {
+          return;
         }
+
+        window.localStorage.setItem(storageKey, JSON.stringify(this.cartItems()));
       });
     }
   }
@@ -136,7 +147,7 @@ export class CartService {
     return true;
   }
 
-  async syncCartFromApi(showError = false): Promise<boolean> {
+  async syncCartFromApi(showError = false, forceSync = false): Promise<boolean> {
     if (!this.authService.isAuthenticated()) {
       return false;
     }
@@ -151,7 +162,7 @@ export class CartService {
       return false;
     }
 
-    if (result.items.length > 0 || this.cartItems().length === 0) {
+    if (forceSync || result.items.length > 0 || this.cartItems().length === 0) {
       await this.setItems(result.items);
     }
 
@@ -163,39 +174,110 @@ export class CartService {
       return false;
     }
 
-    const identifiers = this.getCartItemIdentifiers(item);
     const previousItems = this.cartItems();
 
-    this.removeItemByIdentifiers(identifiers);
+    this.removeItemByIdentifiers(this.getCartItemIdentifiers(item));
+    const result = await this.removeCartLineFromApi(item);
 
-    let lastError: string | null = null;
-
-    for (const identifier of identifiers) {
-      const result = await this.cartApiService.removeItem(identifier);
-
-      if (!result.ok) {
-        lastError = result.error;
-        continue;
-      }
-
+    if (result.ok) {
       return true;
     }
 
     this.cartItems.set(previousItems);
     this.toastService.show(
       'Could not remove product',
-      lastError ?? 'The cart item could not be removed right now.',
+      result.error,
       'error',
       2000,
     );
     return false;
   }
 
-  private restoreCart(): void {
+  async updateQuantityWithApi(item: CartItem, quantity: number): Promise<boolean> {
+    if (!this.ensureAuthenticated('Sign in to manage your cart.')) {
+      return false;
+    }
+
+    const normalizedQuantity = Number.isFinite(quantity)
+      ? Math.max(0, Math.floor(quantity))
+      : item.quantity;
+    const currentQuantity = Math.max(1, Math.floor(item.quantity));
+    const productId = this.resolveCartProductId(item);
+
+    if (!productId) {
+      this.toastService.show(
+        'Could not update cart',
+        'The cart item is missing its product identifier.',
+        'error',
+        2000,
+      );
+      return false;
+    }
+
+    if (normalizedQuantity === currentQuantity) {
+      return true;
+    }
+
+    if (normalizedQuantity > currentQuantity) {
+      const result = await this.cartApiService.addToCart({
+        productId,
+        quantity: normalizedQuantity - currentQuantity,
+      });
+
+      if (!result.ok) {
+        this.toastService.show('Could not update cart', result.error, 'error', 2000);
+        return false;
+      }
+
+      return this.syncCartFromApi(true, true);
+    }
+
+    const removeResult = await this.removeCartLineFromApi(item);
+
+    if (!removeResult.ok) {
+      this.toastService.show('Could not update cart', removeResult.error, 'error', 2000);
+      return false;
+    }
+
+    if (normalizedQuantity === 0) {
+      return this.syncCartFromApi(true, true);
+    }
+
+    const addResult = await this.cartApiService.addToCart({
+      productId,
+      quantity: normalizedQuantity,
+    });
+
+    if (!addResult.ok) {
+      await this.cartApiService.addToCart({
+        productId,
+        quantity: currentQuantity,
+      });
+      await this.syncCartFromApi(true, true);
+      this.toastService.show('Could not update cart', addResult.error, 'error', 2000);
+      return false;
+    }
+
+    return this.syncCartFromApi(true, true);
+  }
+
+  private restoreScopedCart(): void {
+    const storageKey = this.getScopedStorageKey();
+
+    if (storageKey === this.activeStorageKey) {
+      return;
+    }
+
+    this.activeStorageKey = storageKey;
+    this.restoreCart(storageKey);
+  }
+
+  private restoreCart(storageKey: string): void {
     try {
-      const savedCart = window.localStorage.getItem(this.storageKey);
+      const savedCart = this.readSavedCart(storageKey);
 
       if (!savedCart) {
+        this.cartItems.set([]);
         return;
       }
 
@@ -210,8 +292,34 @@ export class CartService {
         .map((item) => this.hydrateCartItem(item));
       this.cartItems.set(validItems);
     } catch {
-      window.localStorage.removeItem(this.storageKey);
+      window.localStorage.removeItem(storageKey);
+      this.cartItems.set([]);
     }
+  }
+
+  private readSavedCart(storageKey: string): string | null {
+    const savedCart = window.localStorage.getItem(storageKey);
+
+    if (savedCart) {
+      return savedCart;
+    }
+
+    const legacyCart = window.localStorage.getItem(this.legacyStorageKey);
+
+    if (!legacyCart) {
+      return null;
+    }
+
+    window.localStorage.setItem(storageKey, legacyCart);
+    window.localStorage.removeItem(this.legacyStorageKey);
+    return legacyCart;
+  }
+
+  private getScopedStorageKey(): string {
+    const user = this.authService.currentUser?.();
+    const scope = user?.id?.trim() || user?.email?.trim().toLowerCase() || this.guestStorageScope;
+
+    return `${this.storageKey}:${scope}`;
   }
 
   private hydrateCartItem(item: CartItem): CartItem {
@@ -306,6 +414,40 @@ export class CartService {
 
   private matchesCartIdentifier(item: CartItem, identifier: string): boolean {
     return item.id === identifier || item.detailProductId === identifier;
+  }
+
+  private resolveCartProductId(item: CartItemIdentifier): string | null {
+    const detailProductId = item.detailProductId?.trim();
+    const cartLineId = item.id.trim();
+
+    if (detailProductId && detailProductId !== cartLineId) {
+      return detailProductId;
+    }
+
+    return detailProductId ?? cartLineId ?? null;
+  }
+
+  private async removeCartLineFromApi(
+    item: CartItemIdentifier | string,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    const identifiers = this.getCartItemIdentifiers(item);
+    let lastError: string | null = null;
+
+    for (const identifier of identifiers) {
+      const result = await this.cartApiService.removeItem(identifier);
+
+      if (!result.ok) {
+        lastError = result.error;
+        continue;
+      }
+
+      return { ok: true };
+    }
+
+    return {
+      ok: false,
+      error: lastError ?? 'The cart item could not be removed right now.',
+    };
   }
 
   private resolveDetailProductId(

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, shareReplay, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, throwError } from 'rxjs';
 import {
   ApiCategoryRef,
   ApiProductRecord,
@@ -30,17 +30,21 @@ export class ProductCollectionsService {
     map((response) => extractCategories(response)),
     shareReplay(1),
   );
-  private readonly allProducts$ = this.getAllProductsFromApi().pipe(
-    shareReplay(1),
-  );
+  private readonly allProductsCache = new Map<string, Observable<ApiProductRecord[]>>();
+  private readonly categoryCache = new Map<string, Observable<ApiProductRecord[]>>();
+  private readonly subcategoryCache = new Map<string, Observable<ApiProductRecord[]>>();
   private readonly collectionCache = new Map<string, Observable<ApiProductRecord[]>>();
 
   getCategories(): Observable<TaxonomyApiCategory[]> {
     return this.categories$;
   }
 
-  getAllProducts(): Observable<ApiProductRecord[]> {
-    return this.allProducts$;
+  getAllProducts(options?: ExtractProductsOptions): Observable<ApiProductRecord[]> {
+    const cacheKey = JSON.stringify({ options });
+
+    return this.getOrCreateCachedRequest(this.allProductsCache, cacheKey, () =>
+      this.getAllProductsFromApi(options),
+    );
   }
 
   getProductsByCategoryId(
@@ -48,11 +52,14 @@ export class ProductCollectionsService {
     fetchAllPages = false,
     options?: ExtractProductsOptions,
   ): Observable<ApiProductRecord[]> {
-    return (fetchAllPages
-      ? this.getAllCategoryProductsFromApi(categoryId, options)
-      : this.http.get<ApiProductsListResponse>(buildProductsByCategoryUrl(categoryId)).pipe(
-          map((response) => extractProducts(response, options)),
-        )
+    const cacheKey = JSON.stringify({ categoryId, fetchAllPages, options });
+
+    return this.getOrCreateCachedRequest(this.categoryCache, cacheKey, () =>
+      fetchAllPages
+        ? this.getAllCategoryProductsFromApi(categoryId, options)
+        : this.http.get<ApiProductsListResponse>(buildProductsByCategoryUrl(categoryId)).pipe(
+            map((response) => extractProducts(response, options)),
+          ),
     );
   }
 
@@ -61,23 +68,26 @@ export class ProductCollectionsService {
     fetchAllPages = false,
     options?: ExtractProductsOptions,
   ): Observable<ApiProductRecord[]> {
-    const request$ = fetchAllPages
-      ? this.getAllSubcategoryProductsFromApi(subcategoryId, options)
-      : this.http.get<ApiProductsListResponse>(buildProductsBySubcategoryUrl(subcategoryId, this.pageLimit, 1)).pipe(
-          map((response) => extractProducts(response, options)),
-        );
+    const cacheKey = JSON.stringify({ subcategoryId, fetchAllPages, options });
 
-    return request$
-      .pipe(
+    return this.getOrCreateCachedRequest(this.subcategoryCache, cacheKey, () => {
+      const request$ = fetchAllPages
+        ? this.getAllSubcategoryProductsFromApi(subcategoryId, options)
+        : this.http.get<ApiProductsListResponse>(buildProductsBySubcategoryUrl(subcategoryId, this.pageLimit, 1)).pipe(
+            map((response) => extractProducts(response, options)),
+          );
+
+      return request$.pipe(
         switchMap((products) =>
           products.length
             ? of(products)
-            : this.getProductsBySubcategoryFallback(subcategoryId),
+            : this.getProductsBySubcategoryFallback(subcategoryId, options),
         ),
         map((products) =>
           options?.includeDeleted ? products : products.filter((product) => !product.isDeleted),
         ),
       );
+    });
   }
 
   getProductsByQuery(
@@ -85,16 +95,10 @@ export class ProductCollectionsService {
     options?: ExtractProductsOptions & { fetchAllPages?: boolean },
   ): Observable<ApiProductRecord[]> {
     const cacheKey = JSON.stringify({ query, options });
-    const cached = this.collectionCache.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    const request$ = this.categories$.pipe(
+    return this.getOrCreateCachedRequest(this.collectionCache, cacheKey, () => this.categories$.pipe(
       switchMap((categories) => {
         if (!query) {
-          return this.allProducts$;
+          return this.getAllProducts({ includeDeleted: options?.includeDeleted });
         }
 
         if (query.subcategoryName && query.categoryName) {
@@ -115,11 +119,7 @@ export class ProductCollectionsService {
 
         return of([] as ApiProductRecord[]);
       }),
-      shareReplay(1),
-    );
-
-    this.collectionCache.set(cacheKey, request$);
-    return request$;
+    ));
   }
 
   private matchesRefId(value: string | ApiCategoryRef | null | undefined, id: string): boolean {
@@ -134,12 +134,15 @@ export class ProductCollectionsService {
     return value._id === id || value.id === id;
   }
 
-  private getProductsBySubcategoryFallback(subcategoryId: string): Observable<ApiProductRecord[]> {
+  private getProductsBySubcategoryFallback(
+    subcategoryId: string,
+    options?: ExtractProductsOptions,
+  ): Observable<ApiProductRecord[]> {
     return this.categories$.pipe(
       switchMap((categories) => {
         const subcategoryMeta = this.findSubcategoryMeta(categories, subcategoryId);
 
-        return this.allProducts$.pipe(
+        return this.getAllProducts(options).pipe(
           map((items) =>
             items.filter((item) => {
               const matchesSubcategory =
@@ -203,10 +206,10 @@ export class ProductCollectionsService {
     return normalizeLabel(value.name) === normalizeLabel(expectedName);
   }
 
-  private getAllProductsFromApi(): Observable<ApiProductRecord[]> {
+  private getAllProductsFromApi(options?: ExtractProductsOptions): Observable<ApiProductRecord[]> {
     return this.getAllPages(
       (page) => this.http.get<ApiProductsListResponse>(buildProductsListUrl(this.pageLimit, page)),
-      undefined,
+      options,
     );
   }
 
@@ -284,5 +287,28 @@ export class ProductCollectionsService {
       seenIds.add(id);
       return true;
     });
+  }
+
+  private getOrCreateCachedRequest(
+    cache: Map<string, Observable<ApiProductRecord[]>>,
+    cacheKey: string,
+    createRequest: () => Observable<ApiProductRecord[]>,
+  ): Observable<ApiProductRecord[]> {
+    const cached = cache.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = createRequest().pipe(
+      catchError((error) => {
+        cache.delete(cacheKey);
+        return throwError(() => error);
+      }),
+      shareReplay(1),
+    );
+
+    cache.set(cacheKey, request$);
+    return request$;
   }
 }

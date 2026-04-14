@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Title } from '@angular/platform-browser';
@@ -178,7 +178,8 @@ export class ProductDetailsPageComponent {
   });
 
   constructor() {
-    this.productState$.subscribe((state) => {
+    effect(() => {
+      const state = this.productState();
       const product = state.data;
       this.title.setTitle(product ? `${product.name} | Veloura` : 'Product Details | Veloura');
       this.selectedQuantity.set(1);

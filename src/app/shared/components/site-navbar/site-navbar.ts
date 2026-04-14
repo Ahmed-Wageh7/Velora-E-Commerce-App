@@ -1,6 +1,6 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { AfterViewInit, ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, filter } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
@@ -23,6 +23,7 @@ import { CollectionQuery } from '../../../core/services/product-api.utils';
 export class SiteNavbar implements AfterViewInit {
   private readonly document = inject(DOCUMENT);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly collectionProductsService = inject(CollectionProductsService);
@@ -73,11 +74,17 @@ export class SiteNavbar implements AfterViewInit {
     this.updateNavbarDockState();
     this.changeDetectorRef.detectChanges();
 
-    this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-      this.isSearchModalOpen = false;
-      this.searchQuery.set('');
-      this.searchResults.set([]);
-    });
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        this.isSearchModalOpen = false;
+        this.searchQuery.set('');
+        this.searchResults.set([]);
+        this.syncBodyOverflow();
+      });
   }
 
   protected toggleMenu(): void {

@@ -5,6 +5,7 @@ html {
 :root {
   --shimmer-duration: 0.85s;
   --app-layout-max-width: 1350px;
+  --price-color: #7a6329;
 }
 
 @keyframes global-image-shimmer {
@@ -169,4 +170,21 @@ button {
   object-fit: contain;
   transform-origin: center;
   will-change: transform, opacity, filter;
+}
+
+.arrogate-card-current,
+.care-card-current,
+.collection-gallery-card-current,
+.frankel-card-current,
+.pink-card-current,
+.collection-product-current,
+.fragrance-card-current,
+.art-card-current,
+.promise-card-current,
+.frankel-home-card-current,
+.home-collection-card-current,
+.product-price-current,
+.purchase-price-current,
+.related-card-price {
+  color: var(--price-color) !important;
 }

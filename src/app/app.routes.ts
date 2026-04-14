@@ -1,128 +1,167 @@
 import { Routes } from '@angular/router';
-import { Home } from './features/home/pages/home/home';
-import { AuthPageComponent } from './features/auth/pages/auth/auth';
-import { ProductDetailsPageComponent } from './features/catalog/pages/product-details/product-details';
-import { CheckoutPageComponent } from './features/checkout/pages/checkout/checkout';
-import { CareProductsPageComponent } from './features/collections/pages/care-products/care-products';
-import { ArrogateCollectionPageComponent } from './features/collections/pages/arrogate-collection/arrogate-collection';
-import { FrankelCollectionPageComponent } from './features/collections/pages/frankel-collection/frankel-collection';
-import { PinkCollectionPageComponent } from './features/collections/pages/pink-collection/pink-collection';
-import { LocalCollectionGalleryPageComponent } from './features/collections/pages/local-collection-gallery/local-collection-gallery';
-import { ClassicWatchesPageComponent } from './features/collections/pages/classic-watches/classic-watches';
-import { SportWatchesPageComponent } from './features/collections/pages/sport-watches/sport-watches';
-import { WomenWatchesPageComponent } from './features/collections/pages/women-watches/women-watches';
-import { WomenBagsPageComponent } from './features/collections/pages/women-bags/women-bags';
-import { ChildrenBagsPageComponent } from './features/collections/pages/children-bags/children-bags';
-import { PromiseBagsPageComponent } from './features/collections/pages/promise-bags/promise-bags';
-import { MenSunglassesPageComponent } from './features/collections/pages/men-sunglasses/men-sunglasses';
-import { WomenSunglassesPageComponent } from './features/collections/pages/women-sunglasses/women-sunglasses';
-import { BuyOneGetTwoFreePageComponent } from './features/collections/pages/buy-one-get-two-free/buy-one-get-two-free';
-import { BuyTwoGetThirdFreePageComponent } from './features/collections/pages/buy-two-get-third-free/buy-two-get-third-free';
 
 export const routes: Routes = [
   {
     path: '',
-    component: Home,
+    loadComponent: () => import('./features/home/pages/home/home').then((module) => module.Home),
     title: 'Veloura | Own Your Elegance',
   },
   {
     path: 'product/:folder/:id',
-    component: ProductDetailsPageComponent,
+    loadComponent: () =>
+      import('./features/catalog/pages/product-details/product-details').then(
+        (module) => module.ProductDetailsPageComponent,
+      ),
     title: 'Product Details | Veloura',
   },
   {
     path: 'product/:id',
-    component: ProductDetailsPageComponent,
+    loadComponent: () =>
+      import('./features/catalog/pages/product-details/product-details').then(
+        (module) => module.ProductDetailsPageComponent,
+      ),
     title: 'Product Details | Veloura',
   },
   {
     path: 'checkout',
-    component: CheckoutPageComponent,
+    loadComponent: () =>
+      import('./features/checkout/pages/checkout/checkout').then((module) => module.CheckoutPageComponent),
     title: 'Checkout | Veloura',
   },
   {
+    path: 'checkout/payment',
+    loadComponent: () =>
+      import('./features/checkout/pages/stripe-payment/stripe-payment').then(
+        (module) => module.StripePaymentPageComponent,
+      ),
+    title: 'Secure Payment | Veloura',
+  },
+  {
     path: 'auth/signin',
-    component: AuthPageComponent,
+    loadComponent: () => import('./features/auth/pages/auth/auth').then((module) => module.AuthPageComponent),
     title: 'Sign In | Veloura',
   },
   {
     path: 'auth/register',
-    component: AuthPageComponent,
+    loadComponent: () => import('./features/auth/pages/auth/auth').then((module) => module.AuthPageComponent),
     title: 'Register | Veloura',
   },
   {
     path: 'care-products',
-    component: CareProductsPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/care-products/care-products').then(
+        (module) => module.CareProductsPageComponent,
+      ),
     title: 'Care Products | Veloura',
   },
   {
     path: 'collections/arrogate',
-    component: ArrogateCollectionPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/arrogate-collection/arrogate-collection').then(
+        (module) => module.ArrogateCollectionPageComponent,
+      ),
     title: 'Perfumes | Arrogate | Veloura',
   },
   {
     path: 'collections/frankel',
-    component: FrankelCollectionPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/frankel-collection/frankel-collection').then(
+        (module) => module.FrankelCollectionPageComponent,
+      ),
     title: 'Perfumes | Frankel | Veloura',
   },
   {
     path: 'collections/pink-wild',
-    component: PinkCollectionPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/pink-collection/pink-collection').then(
+        (module) => module.PinkCollectionPageComponent,
+      ),
     title: 'Perfumes | Pink Wild | Veloura',
   },
   {
     path: 'collections/:slug',
-    component: LocalCollectionGalleryPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/local-collection-gallery/local-collection-gallery').then(
+        (module) => module.LocalCollectionGalleryPageComponent,
+      ),
     title: 'Perfumes | Collection | Veloura',
   },
   {
     path: 'watches/classic',
-    component: ClassicWatchesPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/classic-watches/classic-watches').then(
+        (module) => module.ClassicWatchesPageComponent,
+      ),
     title: 'Veloura Watches | Classic Watches',
   },
   {
     path: 'watches/sport',
-    component: SportWatchesPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/sport-watches/sport-watches').then(
+        (module) => module.SportWatchesPageComponent,
+      ),
     title: 'Veloura Watches | Sports Watches',
   },
   {
     path: 'watches/women',
-    component: WomenWatchesPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/women-watches/women-watches').then(
+        (module) => module.WomenWatchesPageComponent,
+      ),
     title: 'Veloura Watches | Women’s Watches',
   },
   {
     path: 'bags/women',
-    component: WomenBagsPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/women-bags/women-bags').then((module) => module.WomenBagsPageComponent),
     title: 'Veloura Bags | Women',
   },
   {
     path: 'bags/children',
-    component: ChildrenBagsPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/children-bags/children-bags').then(
+        (module) => module.ChildrenBagsPageComponent,
+      ),
     title: 'Veloura Bags | Children',
   },
   {
     path: 'bags/promise',
-    component: PromiseBagsPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/promise-bags/promise-bags').then(
+        (module) => module.PromiseBagsPageComponent,
+      ),
     title: 'Veloura Bags | حقيبة برومس',
   },
   {
     path: 'sunglasses/men',
-    component: MenSunglassesPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/men-sunglasses/men-sunglasses').then(
+        (module) => module.MenSunglassesPageComponent,
+      ),
     title: 'Veloura Sunglasses | Men’s Sunglasses',
   },
   {
     path: 'sunglasses/women',
-    component: WomenSunglassesPageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/women-sunglasses/women-sunglasses').then(
+        (module) => module.WomenSunglassesPageComponent,
+      ),
     title: 'Veloura Sunglasses | Women’s Sunglasses',
   },
   {
     path: 'offers/buy-1-get-2-free',
-    component: BuyOneGetTwoFreePageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/buy-one-get-two-free/buy-one-get-two-free').then(
+        (module) => module.BuyOneGetTwoFreePageComponent,
+      ),
     title: 'Buy 1 Get Two Free',
   },
   {
     path: 'offers/buy-2-get-third-free',
-    component: BuyTwoGetThirdFreePageComponent,
+    loadComponent: () =>
+      import('./features/collections/pages/buy-two-get-third-free/buy-two-get-third-free').then(
+        (module) => module.BuyTwoGetThirdFreePageComponent,
+      ),
     title: 'Buy 2 Get Third Free',
   },
   {
