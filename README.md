@@ -189,3 +189,9 @@ Built an Angular 21 storefront with SSR-ready architecture, reusable standalone 
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+## 📸 Preview
+
+| Home | Product | Cart |
+|------|--------|------|
+| ![Home](./screenshots/home.png) | ![Product](./screenshots/product_details.png) | ![Cart](./screenshots/cart.png) |
