@@ -1,8 +1,10 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { ToastService } from './toast.service';
 
 interface AuthApiUser {
   _id?: string;
@@ -56,9 +58,12 @@ export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
   private readonly apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
   private readonly sessionKey = 'veloura-auth-session';
   private readonly session = signal<StoredSession | null>(null);
+  private sessionExpiryHandled = false;
 
   readonly currentUser = computed(() => this.session()?.user ?? null);
   readonly accessToken = computed(() => this.session()?.accessToken ?? null);
@@ -105,12 +110,36 @@ export class AuthService {
     }
   }
 
-  signOut(): void {
+  signOut(options?: { preserveExpiryGuard?: boolean }): void {
+    if (!options?.preserveExpiryGuard) {
+      this.sessionExpiryHandled = false;
+    }
+
     this.session.set(null);
 
     if (isPlatformBrowser(this.platformId)) {
       this.document.defaultView?.localStorage.removeItem(this.sessionKey);
     }
+  }
+
+  handleExpiredSession(): void {
+    if (this.sessionExpiryHandled || !this.session()) {
+      return;
+    }
+
+    this.sessionExpiryHandled = true;
+
+    const currentPath = this.router.url;
+    const returnUrl =
+      currentPath && !currentPath.startsWith('/auth/signin') && !currentPath.startsWith('/auth/register')
+        ? currentPath
+        : '/';
+
+    this.signOut({ preserveExpiryGuard: true });
+    this.toastService.show('Session expired', 'Please sign in again to continue.', 'error', 2200);
+    void this.router.navigate(['/auth/signin'], {
+      queryParams: returnUrl && returnUrl !== '/' ? { returnUrl } : undefined,
+    });
   }
 
   private restoreSession(): void {
@@ -134,6 +163,7 @@ export class AuthService {
   }
 
   private setSession(session: StoredSession): void {
+    this.sessionExpiryHandled = false;
     this.session.set(session);
 
     if (isPlatformBrowser(this.platformId)) {

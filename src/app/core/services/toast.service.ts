@@ -51,7 +51,7 @@ export class ToastService {
     });
   }
 
-  showAddedToCart(product: ToastProductPreview, duration = 3200): void {
+  showAddedToCart(product: ToastProductPreview, duration = 1200): void {
     this.createToast({
       title: 'Added to cart',
       message: product.name,
@@ -62,6 +62,10 @@ export class ToastService {
   }
 
   private createToast({ title, message, type, duration, product }: ToastInput): void {
+    if (type === 'cart') {
+      this.dismissActiveCartToast();
+    }
+
     const id = ++this.nextId;
     const toast: ToastMessage = {
       id,
@@ -170,5 +174,22 @@ export class ToastService {
     }
 
     return requestedDuration;
+  }
+
+  private dismissActiveCartToast(): void {
+    const activeCartToast = this.toasts().find((toast) => toast.type === 'cart');
+
+    if (!activeCartToast) {
+      return;
+    }
+
+    const timeoutId = this.timers.get(activeCartToast.id);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.timers.delete(activeCartToast.id);
+    }
+
+    this.toastsSignal.update((toasts) => toasts.filter((toast) => toast.id !== activeCartToast.id));
   }
 }

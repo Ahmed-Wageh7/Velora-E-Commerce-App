@@ -69,7 +69,8 @@ export class AuthPageComponent {
 
       this.toastService.show('Signed in', 'Welcome back.', 'success', 1500);
       this.isSubmitting = false;
-      void this.router.navigateByUrl('/');
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
+      void this.router.navigateByUrl(returnUrl);
       return;
     } finally {
       this.isSubmitting = false;

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastService } from './toast.service';
 
 describe('ToastService', () => {
@@ -37,5 +37,15 @@ describe('ToastService', () => {
 
     vi.advanceTimersByTime(320);
     expect(service.toasts()).toHaveLength(0);
+  });
+
+  it('replaces the current cart toast immediately when another product is added', () => {
+    const service = TestBed.inject(ToastService);
+
+    service.showAddedToCart({ name: 'Bag', image: '/bag.jpg' }, 1000);
+    service.showAddedToCart({ name: 'Watch', image: '/watch.jpg' }, 1000);
+
+    expect(service.toasts()).toHaveLength(1);
+    expect(service.toasts()[0].message).toBe('Watch');
   });
 });
