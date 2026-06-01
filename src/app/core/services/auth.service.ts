@@ -63,6 +63,7 @@ export class AuthService {
   private readonly apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
   private readonly sessionKey = 'veloura-auth-session';
   private readonly session = signal<StoredSession | null>(null);
+  private expiryTimer: ReturnType<Window['setTimeout']> | null = null;
   private sessionExpiryHandled = false;
 
   readonly currentUser = computed(() => this.session()?.user ?? null);
@@ -115,6 +116,7 @@ export class AuthService {
       this.sessionExpiryHandled = false;
     }
 
+    this.clearExpiryTimer();
     this.session.set(null);
 
     if (isPlatformBrowser(this.platformId)) {
@@ -142,6 +144,16 @@ export class AuthService {
     });
   }
 
+  isAccessTokenExpired(token = this.accessToken()): boolean {
+    if (!token) {
+      return true;
+    }
+
+    const expiresAt = this.getJwtExpiryTime(token);
+
+    return expiresAt !== null && expiresAt <= Date.now();
+  }
+
   private restoreSession(): void {
     try {
       const raw = this.document.defaultView?.localStorage.getItem(this.sessionKey);
@@ -157,6 +169,11 @@ export class AuthService {
       }
 
       this.session.set(parsed);
+      this.scheduleSessionExpiry(parsed.accessToken);
+
+      if (this.isAccessTokenExpired(parsed.accessToken)) {
+        this.handleExpiredSession();
+      }
     } catch {
       this.document.defaultView?.localStorage.removeItem(this.sessionKey);
     }
@@ -165,6 +182,7 @@ export class AuthService {
   private setSession(session: StoredSession): void {
     this.sessionExpiryHandled = false;
     this.session.set(session);
+    this.scheduleSessionExpiry(session.accessToken);
 
     if (isPlatformBrowser(this.platformId)) {
       this.document.defaultView?.localStorage.setItem(this.sessionKey, JSON.stringify(session));
@@ -218,5 +236,60 @@ export class AuthService {
     }
 
     return fallback;
+  }
+
+  private scheduleSessionExpiry(token: string): void {
+    this.clearExpiryTimer();
+
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const expiresAt = this.getJwtExpiryTime(token);
+
+    if (expiresAt === null) {
+      return;
+    }
+
+    const delay = expiresAt - Date.now();
+
+    if (delay <= 0) {
+      window.setTimeout(() => this.handleExpiredSession(), 0);
+      return;
+    }
+
+    this.expiryTimer = window.setTimeout(() => this.handleExpiredSession(), delay);
+  }
+
+  private clearExpiryTimer(): void {
+    if (!this.expiryTimer || !isPlatformBrowser(this.platformId)) {
+      this.expiryTimer = null;
+      return;
+    }
+
+    window.clearTimeout(this.expiryTimer);
+    this.expiryTimer = null;
+  }
+
+  private getJwtExpiryTime(token: string): number | null {
+    try {
+      const browserWindow = this.document.defaultView;
+      const payload = token.split('.')[1];
+
+      if (!payload || !browserWindow) {
+        return null;
+      }
+
+      const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedPayload = normalizedPayload.padEnd(
+        normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
+        '=',
+      );
+      const decodedPayload = JSON.parse(browserWindow.atob(paddedPayload)) as { exp?: unknown };
+
+      return typeof decodedPayload.exp === 'number' ? decodedPayload.exp * 1000 : null;
+    } catch {
+      return null;
+    }
   }
 }

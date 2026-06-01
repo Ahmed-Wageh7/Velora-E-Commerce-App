@@ -6,7 +6,6 @@ import {
 } from "@angular/core";
 import { CurrencyPipe } from "@angular/common";
 import {
-  AbstractControl,
   NonNullableFormBuilder,
   ReactiveFormsModule,
   Validators,
@@ -72,13 +71,13 @@ export class CheckoutPageComponent {
     this.cartItems().reduce((sum, item) => sum + item.price * item.quantity, 0),
   );
   protected readonly orderForm = this.formBuilder.group({
-    paymentMethod: this.formBuilder.control("cod", [Validators.required]),
+    paymentMethod: this.formBuilder.control("stripe", [Validators.required]),
     shippingAddress: this.formBuilder.group({
-      street: this.formBuilder.control("", [
+      street: this.formBuilder.control("Nasr City", [
         Validators.required,
         Validators.minLength(3),
       ]),
-      city: this.formBuilder.control("", [
+      city: this.formBuilder.control("Cairo", [
         Validators.required,
         Validators.minLength(2),
       ]),
@@ -86,15 +85,12 @@ export class CheckoutPageComponent {
         Validators.required,
         Validators.minLength(2),
       ]),
-      postalCode: this.formBuilder.control("", [
+      postalCode: this.formBuilder.control("11765", [
         Validators.required,
         Validators.minLength(3),
       ]),
     }),
   });
-  protected readonly shippingAddressForm =
-    this.orderForm.controls.shippingAddress;
-
   constructor() {
     if (this.authService.isAuthenticated()) {
       void this.cartService.syncCartFromApi(true);
@@ -277,13 +273,6 @@ export class CheckoutPageComponent {
       this.isSubmittingOrder = false;
       this.changeDetectorRef.detectChanges();
     }
-  }
-
-  protected hasControlError(
-    control: AbstractControl | null,
-    errorKey: string,
-  ): boolean {
-    return Boolean(control && control.touched && control.hasError(errorKey));
   }
 
   private clearLineItemState(): void {

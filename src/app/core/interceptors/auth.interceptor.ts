@@ -8,6 +8,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isAuthRequest = req.url.includes('/auth/login') || req.url.includes('/auth/signup');
   const accessToken = authService.accessToken();
 
+  if (!isAuthRequest && accessToken && authService.isAccessTokenExpired(accessToken)) {
+    authService.handleExpiredSession();
+    return throwError(() => new Error('Session expired.'));
+  }
+
   const request =
     !isAuthRequest && accessToken
       ? req.clone({

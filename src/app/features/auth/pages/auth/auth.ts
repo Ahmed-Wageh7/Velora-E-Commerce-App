@@ -13,6 +13,11 @@ import { SiteNavbar } from '../../../../shared/components/site-navbar/site-navba
   styleUrl: './auth.scss',
 })
 export class AuthPageComponent {
+  protected readonly demoCredentials = {
+    email: 'a7medgado77@gmail.com',
+    password: 'AhmedWageh123',
+  };
+
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -27,8 +32,8 @@ export class AuthPageComponent {
   );
 
   protected readonly signInForm = this.formBuilder.group({
-    email: this.formBuilder.control('', [Validators.required, Validators.email]),
-    password: this.formBuilder.control('', [Validators.required]),
+    email: this.formBuilder.control(this.demoCredentials.email, [Validators.required, Validators.email]),
+    password: this.formBuilder.control(this.demoCredentials.password, [Validators.required]),
   });
 
   protected readonly registerForm = this.formBuilder.group(

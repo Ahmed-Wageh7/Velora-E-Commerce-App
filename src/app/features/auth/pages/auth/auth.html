@@ -21,6 +21,12 @@
         <h1 class="auth-title">Sign in to your account</h1>
         <p class="auth-copy">Use your email and password to continue shopping and manage your orders.</p>
 
+        <div class="auth-demo" aria-label="Demo login credentials">
+          <span>Demo access</span>
+          <strong>{{ demoCredentials.email }}</strong>
+          <strong>{{ demoCredentials.password }}</strong>
+        </div>
+
         <label class="auth-field">
           <span>Email address</span>
           <input type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />

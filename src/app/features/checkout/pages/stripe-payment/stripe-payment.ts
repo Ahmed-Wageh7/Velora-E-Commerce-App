@@ -9,7 +9,7 @@ import {
 } from "@angular/core";
 import { CurrencyPipe } from "@angular/common";
 import { Router, RouterLink } from "@angular/router";
-import {
+import type {
   Stripe,
   StripeCardElement,
   StripeCardElementChangeEvent,
@@ -213,6 +213,7 @@ export class StripePaymentPageComponent implements AfterViewInit, OnDestroy {
     this.elements ??= this.stripe.elements();
     this.cardElement ??= this.elements.create("card", {
       hidePostalCode: true,
+      disableLink: true,
       style: {
         base: {
           color: "#685b49",
