@@ -15,11 +15,6 @@ export interface CheckoutOrderPayload {
   shippingAddress: OrderShippingAddress;
 }
 
-export interface CreatePaymentIntentPayload {
-  amount: number;
-  currency: string;
-}
-
 export interface CheckoutOrderConfirmation {
   id: string | null;
   status: string;
@@ -45,53 +40,12 @@ type CheckoutResult =
       error: string;
     };
 
-type PaymentIntentResult =
-  | {
-      ok: true;
-      clientSecret: string;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
-
 @Injectable({
   providedIn: 'root',
 })
 export class OrdersApiService {
   private readonly http = inject(HttpClient);
   private readonly ordersUrl = `${getApiBaseUrl()}/orders`;
-
-  async createPaymentIntent(
-    payload: CreatePaymentIntentPayload,
-  ): Promise<PaymentIntentResult> {
-    try {
-      const response = await firstValueFrom(
-        this.http
-          .post<CheckoutApiResponse>(
-            `${this.ordersUrl}/stripe/payment-intent`,
-            payload,
-          )
-          .pipe(timeout(15000)),
-      );
-
-      const clientSecret = this.extractClientSecret(response);
-
-      if (!clientSecret) {
-        return {
-          ok: false,
-          error: 'The payment session could not be started. Please try again.',
-        };
-      }
-
-      return {
-        ok: true,
-        clientSecret,
-      };
-    } catch (error) {
-      return { ok: false, error: this.getErrorMessage(error) };
-    }
-  }
 
   async checkout(payload: CheckoutOrderPayload): Promise<CheckoutResult> {
     try {
@@ -117,18 +71,6 @@ export class OrdersApiService {
       this.readString(responseRecord, ['message']) ??
       this.readString(data, ['message']) ??
       'Your order has been submitted successfully.'
-    );
-  }
-
-  private extractClientSecret(response: CheckoutApiResponse): string | null {
-    const responseRecord = this.asRecord(response);
-    const data = this.asRecord(response.data);
-    const paymentIntent = this.asRecord(data?.['paymentIntent']);
-
-    return (
-      this.readString(responseRecord, ['clientSecret']) ??
-      this.readString(data, ['clientSecret']) ??
-      this.readString(paymentIntent, ['client_secret', 'clientSecret'])
     );
   }
 

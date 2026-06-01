@@ -30,11 +30,8 @@ export const routes: Routes = [
   },
   {
     path: 'checkout/payment',
-    loadComponent: () =>
-      import('./features/checkout/pages/stripe-payment/stripe-payment').then(
-        (module) => module.StripePaymentPageComponent,
-      ),
-    title: 'Secure Payment | Veloura',
+    redirectTo: 'checkout',
+    pathMatch: 'full',
   },
   {
     path: 'auth/signin',

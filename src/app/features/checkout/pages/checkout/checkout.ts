@@ -71,7 +71,7 @@ export class CheckoutPageComponent {
     this.cartItems().reduce((sum, item) => sum + item.price * item.quantity, 0),
   );
   protected readonly orderForm = this.formBuilder.group({
-    paymentMethod: this.formBuilder.control("stripe", [Validators.required]),
+    paymentMethod: this.formBuilder.control("manual", [Validators.required]),
     shippingAddress: this.formBuilder.group({
       street: this.formBuilder.control("Nasr City", [
         Validators.required,
@@ -228,18 +228,6 @@ export class CheckoutPageComponent {
 
     try {
       const payload = this.orderForm.getRawValue();
-
-      if (payload.paymentMethod === "stripe") {
-        await this.router.navigate(["/checkout/payment"], {
-          state: {
-            checkoutPayload: payload,
-            checkoutTotal: this.total(),
-            checkoutItemCount: this.itemCount(),
-          },
-        });
-        return;
-      }
-
       const result = await this.ordersApiService.checkout(payload);
 
       if (!result.ok) {
