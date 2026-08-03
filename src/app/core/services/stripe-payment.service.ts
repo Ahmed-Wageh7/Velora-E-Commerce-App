@@ -116,7 +116,13 @@ export class StripePaymentService {
 
     if (!environment.stripePublishableKey || environment.stripePublishableKey.includes('replace_with')) {
       return Promise.reject(
-        new Error('Stripe publishable key is missing. Add it to src/environments/environment.ts.'),
+        new Error('Stripe live publishable key is missing. Add your pk_live key to src/environments/environment.ts.'),
+      );
+    }
+
+    if (!environment.stripePublishableKey.startsWith('pk_live_')) {
+      return Promise.reject(
+        new Error('Stripe is not in live mode. Replace the frontend key with your pk_live key.'),
       );
     }
 

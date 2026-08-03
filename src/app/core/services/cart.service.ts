@@ -142,9 +142,7 @@ export class CartService {
       return false;
     }
 
-    this.addToCart(product, quantity);
-    void this.syncCartFromApi();
-    return true;
+    return this.syncCartFromApi(true, true);
   }
 
   async syncCartFromApi(showError = false, forceSync = false): Promise<boolean> {
@@ -170,16 +168,25 @@ export class CartService {
   }
 
   async removeItemWithApi(item: CartItemIdentifier | string): Promise<boolean> {
-    if (!this.ensureAuthenticated('Sign in to manage your cart.')) {
-      return false;
-    }
-
+    const identifiers = this.getCartItemIdentifiers(item);
     const previousItems = this.cartItems();
 
-    this.removeItemByIdentifiers(this.getCartItemIdentifiers(item));
+    this.removeItemByIdentifiers(identifiers);
+
+    if (!this.authService.isAuthenticated()) {
+      return true;
+    }
+
     const result = await this.removeCartLineFromApi(item);
 
     if (result.ok) {
+      void this.syncCartFromApi(false, true);
+      return true;
+    }
+
+    const synced = await this.syncCartFromApi(false, true);
+
+    if (!synced || !this.cartItems().some((cartItem) => identifiers.some((identifier) => this.matchesCartIdentifier(cartItem, identifier)))) {
       return true;
     }
 

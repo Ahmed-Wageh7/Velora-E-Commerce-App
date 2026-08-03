@@ -62,15 +62,15 @@ export class CartAnimationService {
               },
               {
                 opacity: 1,
-                transform: `translate3d(${travelX * 0.28}px, ${travelY * 0.18 + arcLift * 0.55}px, 0) scale(1.16) rotate(4deg)`,
+                transform: `translate3d(${travelX * 0.24}px, ${travelY * 0.14 + arcLift * 0.5}px, 0) scale(1.08) rotate(3deg)`,
                 filter: 'blur(0)',
-                offset: 0.38,
+                offset: 0.34,
               },
               {
                 opacity: 0.94,
-                transform: `translate3d(${travelX * 0.72}px, ${travelY * 0.7 + arcLift}px, 0) scale(0.62) rotate(8deg)`,
+                transform: `translate3d(${travelX * 0.7}px, ${travelY * 0.66 + arcLift}px, 0) scale(0.82) rotate(7deg)`,
                 filter: 'blur(0.15px)',
-                offset: 0.72,
+                offset: 0.76,
               },
               {
                 opacity: 0,
@@ -79,8 +79,8 @@ export class CartAnimationService {
               },
             ],
             {
-              duration: 1350,
-              easing: 'cubic-bezier(0.2, 0.9, 0.24, 1)',
+              duration: 2100,
+              easing: 'cubic-bezier(0.18, 0.74, 0.22, 1)',
               fill: 'forwards',
             },
           );
@@ -91,7 +91,7 @@ export class CartAnimationService {
               { transform: 'scale(1.18)', offset: 0.45 },
               { transform: 'scale(1)' },
             ],
-            { duration: 360, easing: 'ease-out', delay: 980 },
+            { duration: 420, easing: 'ease-out', delay: 1620 },
           );
 
           if (cartIcon instanceof SVGElement) {
@@ -101,7 +101,7 @@ export class CartAnimationService {
                 { transform: 'rotate(-12deg)', offset: 0.4 },
                 { transform: 'rotate(0deg)' },
               ],
-              { duration: 380, easing: 'ease-out', delay: 980 },
+              { duration: 420, easing: 'ease-out', delay: 1620 },
             );
           }
 

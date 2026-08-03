@@ -18,9 +18,10 @@ export interface ToastMessage {
   remaining: number;
   startedAt: number;
   product?: ToastProductPreview;
+  replaceGroup?: 'cart';
 }
 
-type ToastInput = Pick<ToastMessage, 'title' | 'message' | 'type' | 'duration' | 'product'>;
+type ToastInput = Pick<ToastMessage, 'title' | 'message' | 'type' | 'duration' | 'product' | 'replaceGroup'>;
 
 @Injectable({
   providedIn: 'root',
@@ -58,12 +59,28 @@ export class ToastService {
       type: 'cart',
       duration,
       product,
+      replaceGroup: 'cart',
     });
   }
 
-  private createToast({ title, message, type, duration, product }: ToastInput): void {
-    if (type === 'cart') {
-      this.dismissActiveCartToast();
+  showCartStatus(
+    title: string,
+    message: string,
+    type: Extract<ToastMessage['type'], 'success' | 'info' | 'error'> = 'info',
+    duration = 1600,
+  ): void {
+    this.createToast({
+      title,
+      message,
+      type,
+      duration: this.getDefaultDuration(type, duration),
+      replaceGroup: 'cart',
+    });
+  }
+
+  private createToast({ title, message, type, duration, product, replaceGroup }: ToastInput): void {
+    if (replaceGroup === 'cart') {
+      this.dismissActiveCartToastGroup();
     }
 
     const id = ++this.nextId;
@@ -78,6 +95,7 @@ export class ToastService {
       remaining: duration,
       startedAt: Date.now(),
       product,
+      replaceGroup,
     };
 
     this.toastsSignal.update((toasts) => [...toasts, toast]);
@@ -176,8 +194,8 @@ export class ToastService {
     return requestedDuration;
   }
 
-  private dismissActiveCartToast(): void {
-    const activeCartToast = this.toasts().find((toast) => toast.type === 'cart');
+  private dismissActiveCartToastGroup(): void {
+    const activeCartToast = this.toasts().find((toast) => toast.replaceGroup === 'cart');
 
     if (!activeCartToast) {
       return;

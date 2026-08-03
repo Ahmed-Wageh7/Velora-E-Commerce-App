@@ -168,7 +168,7 @@ export class CheckoutPageComponent implements OnDestroy {
     this.clearLineItemState();
 
     if (updated) {
-      this.toastService.show(
+      this.toastService.showCartStatus(
         "Cart updated",
         "Item quantity increased.",
         "success",
@@ -193,7 +193,7 @@ export class CheckoutPageComponent implements OnDestroy {
         nextQuantity > 0
           ? "Item quantity decreased."
           : "Item removed from cart.";
-      this.toastService.show("Cart updated", message, "info", 1600);
+      this.toastService.showCartStatus("Cart updated", message, "info", 1600);
     }
   }
 
@@ -205,7 +205,7 @@ export class CheckoutPageComponent implements OnDestroy {
     this.clearLineItemState();
 
     if (removed) {
-      this.toastService.show("Product deleted successfully", "", "success");
+      this.toastService.showCartStatus("Product deleted successfully", "", "success", 1600);
     }
   }
 
