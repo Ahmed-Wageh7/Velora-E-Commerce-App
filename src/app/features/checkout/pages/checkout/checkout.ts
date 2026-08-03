@@ -1,4 +1,7 @@
 import {
+  ElementRef,
+  OnDestroy,
+  ViewChild,
   ChangeDetectorRef,
   Component,
   computed,
@@ -24,6 +27,10 @@ import {
 } from "../../../../core/services/orders-api.service";
 import { ProductDetailsService } from "../../../../core/services/product-details.service";
 import { ProductsService } from "../../../../core/services/products.service";
+import {
+  StripeCardElement,
+  StripePaymentService,
+} from "../../../../core/services/stripe-payment.service";
 import { ToastService } from "../../../../core/services/toast.service";
 import { SiteNavbar } from "../../../../shared/components/site-navbar/site-navbar";
 
@@ -37,7 +44,7 @@ interface SubmittedOrderState extends CheckoutOrderConfirmation {
   templateUrl: "./checkout.html",
   styleUrl: "./checkout.scss",
 })
-export class CheckoutPageComponent {
+export class CheckoutPageComponent implements OnDestroy {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly router = inject(Router);
@@ -49,6 +56,7 @@ export class CheckoutPageComponent {
   private readonly ordersApiService = inject(OrdersApiService);
   private readonly productDetailsService = inject(ProductDetailsService);
   private readonly productsService = inject(ProductsService);
+  private readonly stripePaymentService = inject(StripePaymentService);
   private readonly toastService = inject(ToastService);
   private readonly specialCollectionSubcategoryIds: Record<string, string> = {
     "Arrogate-collection": "69d50edf9e39253830600b30",
@@ -60,7 +68,21 @@ export class CheckoutPageComponent {
     null;
   protected isSubmittingOrder = false;
   protected orderErrorMessage = "";
+  protected cardErrorMessage = "";
+  protected isStripeCardReady = false;
   protected submittedOrder: SubmittedOrderState | null = null;
+  private stripeCard: StripeCardElement | null = null;
+  private stripeCardContainer: ElementRef<HTMLElement> | null = null;
+  private stripeCardMountPromise: Promise<void> | null = null;
+
+  @ViewChild("stripeCardElement")
+  set stripeCardElementHost(host: ElementRef<HTMLElement> | undefined) {
+    this.stripeCardContainer = host ?? null;
+
+    if (host) {
+      void this.mountStripeCard();
+    }
+  }
 
   protected readonly cartItems = this.cartService.items;
   protected readonly total = this.cartService.total;
@@ -71,7 +93,7 @@ export class CheckoutPageComponent {
     this.cartItems().reduce((sum, item) => sum + item.price * item.quantity, 0),
   );
   protected readonly orderForm = this.formBuilder.group({
-    paymentMethod: this.formBuilder.control("manual", [Validators.required]),
+    paymentMethod: this.formBuilder.control("card", [Validators.required]),
     shippingAddress: this.formBuilder.group({
       street: this.formBuilder.control("Nasr City", [
         Validators.required,
@@ -95,6 +117,11 @@ export class CheckoutPageComponent {
     if (this.authService.isAuthenticated()) {
       void this.cartService.syncCartFromApi(true);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stripeCard?.destroy();
+    this.stripeCard = null;
   }
 
   protected get isCheckoutBusy(): boolean {
@@ -211,6 +238,7 @@ export class CheckoutPageComponent {
 
     this.orderForm.markAllAsTouched();
     this.orderErrorMessage = "";
+    this.cardErrorMessage = "";
 
     if (this.orderForm.invalid) {
       this.toastService.show(
@@ -222,12 +250,31 @@ export class CheckoutPageComponent {
       return;
     }
 
+    await this.mountStripeCard();
+
+    if (!this.stripeCard) {
+      this.orderErrorMessage =
+        this.cardErrorMessage ||
+        "Card payment is not ready yet. Please check your Stripe setup.";
+      this.toastService.show(
+        "Payment is not ready",
+        this.orderErrorMessage,
+        "error",
+        2600,
+      );
+      return;
+    }
+
     this.isSubmittingOrder = true;
     this.submittedOrder = null;
     this.changeDetectorRef.detectChanges();
 
     try {
-      const payload = this.orderForm.getRawValue();
+      const formValue = this.orderForm.getRawValue();
+      const payload = {
+        ...formValue,
+        paymentMethod: "card",
+      };
       const result = await this.ordersApiService.checkout(payload);
 
       if (!result.ok) {
@@ -241,19 +288,69 @@ export class CheckoutPageComponent {
         return;
       }
 
+      const orderId = result.order?.id;
+
+      if (!orderId) {
+        this.orderErrorMessage =
+          "The backend created the order but did not return an order ID for Stripe.";
+        this.toastService.show(
+          "Could not start payment",
+          this.orderErrorMessage,
+          "error",
+          2600,
+        );
+        return;
+      }
+
+      const intentResult =
+        await this.ordersApiService.createStripePaymentIntent(orderId);
+
+      if (!intentResult.ok) {
+        this.orderErrorMessage = intentResult.error;
+        this.toastService.show(
+          "Could not start payment",
+          intentResult.error,
+          "error",
+          2600,
+        );
+        return;
+      }
+
+      const user = this.authService.currentUser();
+      const paymentResult = await this.stripePaymentService.confirmCardPayment(
+        intentResult.clientSecret,
+        this.stripeCard,
+        {
+          name: user?.name,
+          email: user?.email,
+        },
+      );
+
+      if (!paymentResult.ok) {
+        this.orderErrorMessage = paymentResult.error;
+        this.cardErrorMessage = paymentResult.error;
+        this.toastService.show(
+          "Payment failed",
+          paymentResult.error,
+          "error",
+          3000,
+        );
+        return;
+      }
+
       this.submittedOrder = {
         id: result.order?.id ?? null,
-        status: result.order?.status ?? "pending",
-        paymentMethod: result.order?.paymentMethod ?? payload.paymentMethod,
+        status: "paid",
+        paymentMethod: "card",
         shippingAddress:
           result.order?.shippingAddress ?? payload.shippingAddress,
-        message: result.message,
+        message: "Payment completed successfully and your order was submitted.",
       };
 
-      await this.cartService.syncCartFromApi(true, true);
+      this.cartService.clearCart();
       this.toastService.show(
-        "Order submitted",
-        result.message,
+        "Payment completed",
+        "Your card payment was successful.",
         "success",
         2200,
       );
@@ -261,6 +358,52 @@ export class CheckoutPageComponent {
       this.isSubmittingOrder = false;
       this.changeDetectorRef.detectChanges();
     }
+  }
+
+  private async mountStripeCard(): Promise<void> {
+    if (this.stripeCard) {
+      return;
+    }
+
+    const container = this.stripeCardContainer?.nativeElement;
+
+    if (!container) {
+      return;
+    }
+
+    if (this.stripeCardMountPromise) {
+      return this.stripeCardMountPromise;
+    }
+
+    this.cardErrorMessage = "";
+    this.stripeCardMountPromise = this.stripePaymentService
+      .createCardElement(container)
+      .then((card) => {
+        this.stripeCard = card;
+        this.isStripeCardReady = true;
+        card.on("change", (event) => {
+          this.cardErrorMessage = event.error?.message ?? "";
+          this.changeDetectorRef.detectChanges();
+        });
+      })
+      .catch((error: unknown) => {
+        this.isStripeCardReady = false;
+        this.cardErrorMessage = this.readErrorMessage(
+          error,
+          "Could not initialize Stripe payments.",
+        );
+      })
+      .finally(() => {
+        this.stripeCardMountPromise = null;
+        this.changeDetectorRef.detectChanges();
+      });
+
+    return this.stripeCardMountPromise;
+  }
+
+  private readErrorMessage(error: unknown, fallback: string): string {
+    const message = (error as { message?: string })?.message;
+    return typeof message === "string" && message.trim() ? message : fallback;
   }
 
   private clearLineItemState(): void {

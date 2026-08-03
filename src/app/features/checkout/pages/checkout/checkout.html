@@ -157,7 +157,21 @@
                 <span>Amount to pay</span>
                 <span>{{ total() | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
               </div>
-              <p class="checkout-vat">Order confirmation submits directly.</p>
+              <p class="checkout-vat">Secure card payment powered by Stripe.</p>
+            </div>
+
+            <div class="checkout-summary-block checkout-payment-block">
+              <label class="checkout-field checkout-card-field">
+                <span>Card details</span>
+                <div
+                  #stripeCardElement
+                  class="checkout-stripe-card"
+                  [class.checkout-stripe-card--ready]="isStripeCardReady"
+                ></div>
+              </label>
+              @if (cardErrorMessage) {
+              <p class="checkout-submit-error" aria-live="assertive">{{ cardErrorMessage }}</p>
+              }
             </div>
 
             @if (orderErrorMessage) {
@@ -174,7 +188,7 @@
                 @if (isCheckoutBusy) {
                 <span class="action-button-spinner" aria-hidden="true"></span>
                 } @else {
-                <span>Submit order</span>
+                <span>Pay securely</span>
                 }
               </span>
             </button>

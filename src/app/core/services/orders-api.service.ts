@@ -29,6 +29,12 @@ interface CheckoutApiResponse {
   data?: unknown;
 }
 
+interface StripeIntentApiResponse {
+  clientSecret?: string;
+  paymentIntentId?: string;
+  data?: unknown;
+}
+
 type CheckoutResult =
   | {
       ok: true;
@@ -57,6 +63,37 @@ export class OrdersApiService {
         ok: true,
         message: this.extractMessage(response),
         order: this.extractOrder(response, payload),
+      };
+    } catch (error) {
+      return { ok: false, error: this.getErrorMessage(error) };
+    }
+  }
+
+  async createStripePaymentIntent(
+    orderId: string,
+  ): Promise<{ ok: true; clientSecret: string; paymentIntentId: string | null } | { ok: false; error: string }> {
+    try {
+      const response = await firstValueFrom(
+        this.http
+          .post<StripeIntentApiResponse>(`${this.ordersUrl}/stripe/payment-intent`, { orderId })
+          .pipe(timeout(15000)),
+      );
+      const responseRecord = this.asRecord(response);
+      const data = this.asRecord(response.data);
+      const clientSecret =
+        this.readString(responseRecord, ['clientSecret']) ??
+        this.readString(data, ['clientSecret']);
+
+      if (!clientSecret) {
+        return { ok: false, error: 'The backend did not return a Stripe client secret.' };
+      }
+
+      return {
+        ok: true,
+        clientSecret,
+        paymentIntentId:
+          this.readString(responseRecord, ['paymentIntentId']) ??
+          this.readString(data, ['paymentIntentId']),
       };
     } catch (error) {
       return { ok: false, error: this.getErrorMessage(error) };
@@ -117,6 +154,10 @@ export class OrdersApiService {
         (typeof error.error === 'string' ? error.error.trim() : null);
 
       if (responseMessage) {
+        if (responseMessage.toLowerCase().includes('stripe is not configured')) {
+          return 'Card payments are temporarily unavailable. Please contact support or try another payment method.';
+        }
+
         return responseMessage;
       }
 

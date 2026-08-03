@@ -335,6 +335,11 @@
   padding: 8px 0;
 }
 
+.checkout-payment-block {
+  display: grid;
+  gap: 10px;
+}
+
 .summary-row {
   display: flex;
   align-items: center;
@@ -414,9 +419,21 @@
   outline: none;
 }
 
-.checkout-field input:focus {
+.checkout-field input:focus,
+.checkout-stripe-card--ready:focus-within {
   border-color: #a18b5b;
   box-shadow: 0 0 0 3px rgba(149, 129, 77, 0.12);
+}
+
+.checkout-card-field {
+  margin-top: 4px;
+}
+
+.checkout-stripe-card {
+  min-height: 48px;
+  padding: 14px;
+  border: 1px solid #e3d9cb;
+  background: #fff;
 }
 
 .checkout-field-error,
