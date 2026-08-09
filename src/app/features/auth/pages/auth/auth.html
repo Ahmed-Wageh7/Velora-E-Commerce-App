@@ -12,7 +12,9 @@
 
         <div class="auth-actions">
           <a class="auth-submit action-button" routerLink="/">Continue</a>
-          <button type="button" class="auth-link-button" (click)="signOut()">Sign out</button>
+          <button type="button" class="auth-link-button" [disabled]="isSigningOut" (click)="signOut()">
+            {{ isSigningOut ? 'Signing out...' : 'Sign out' }}
+          </button>
         </div>
       </div>
     } @else if (mode() === 'signin') {

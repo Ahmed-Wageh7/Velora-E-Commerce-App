@@ -1,8 +1,8 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { isPlatformBrowser } from '@angular/common';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom, timeout } from 'rxjs';
+import { Observable, catchError, firstValueFrom, map, of, tap, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ToastService } from './toast.service';
 
@@ -16,9 +16,9 @@ interface AuthApiUser {
 
 interface AuthApiResponse {
   success?: boolean;
+  message?: string;
   accessToken?: string;
   token?: string;
-  refreshToken?: string;
   user?: AuthApiUser;
   data?:
     | AuthApiUser
@@ -26,22 +26,7 @@ interface AuthApiResponse {
         user?: AuthApiUser;
         token?: string;
         accessToken?: string;
-        refreshToken?: string;
       };
-}
-
-interface SignupApiResponse {
-  success?: boolean;
-  message: string;
-  token?: string;
-  user?: AuthApiUser;
-  data?: AuthApiUser | { user?: AuthApiUser; token?: string; accessToken?: string; refreshToken?: string };
-}
-
-interface StoredSession {
-  accessToken: string;
-  refreshToken: string | null;
-  user: AuthUser;
 }
 
 export interface AuthUser {
@@ -56,39 +41,46 @@ export interface AuthUser {
 })
 export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly document = inject(DOCUMENT);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
   private readonly apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, '');
-  private readonly sessionKey = 'veloura-auth-session';
-  private readonly session = signal<StoredSession | null>(null);
-  private expiryTimer: ReturnType<Window['setTimeout']> | null = null;
+  private readonly accessTokenState = signal<string | null>(null);
+  private readonly currentUserState = signal<AuthUser | null>(null);
+  private readonly authInitializingState = signal(false);
   private sessionExpiryHandled = false;
+  private restorePromise: Promise<boolean> | null = null;
 
-  readonly currentUser = computed(() => this.session()?.user ?? null);
-  readonly accessToken = computed(() => this.session()?.accessToken ?? null);
-  readonly isAuthenticated = computed(() => this.session() !== null);
+  readonly accessToken = this.accessTokenState.asReadonly();
+  readonly currentUser = this.currentUserState.asReadonly();
+  readonly isAuthInitializing = this.authInitializingState.asReadonly();
+  readonly isAuthenticated = computed(() => Boolean(this.accessTokenState()));
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.restoreSession();
+      void this.restoreSession();
     }
   }
 
   async signIn(email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
     try {
       const response = await firstValueFrom(
-        this.http.post<AuthApiResponse>(`${this.apiBaseUrl}/auth/login`, {
-          email: email.trim().toLowerCase(),
-          password,
-        }).pipe(timeout(15000)),
+        this.http
+          .post<AuthApiResponse>(
+            `${this.apiBaseUrl}/auth/login`,
+            {
+              email: email.trim().toLowerCase(),
+              password,
+            },
+            { withCredentials: true },
+          )
+          .pipe(timeout(15000)),
       );
 
-      this.setSession(this.toStoredSession(response));
+      this.applyAuthResponse(response, { requireUser: true });
       return { ok: true };
     } catch (error) {
-      return { ok: false, error: this.getErrorMessage(error, 'Incorrect email or password.') };
+      return { ok: false, error: this.getLoginErrorMessage(error) };
     }
   }
 
@@ -98,38 +90,138 @@ export class AuthService {
 
     try {
       const response = await firstValueFrom(
-        this.http.post<SignupApiResponse>(`${this.apiBaseUrl}/auth/signup`, {
-          name: derivedName,
-          email: normalizedEmail,
-          password,
-        }).pipe(timeout(15000)),
+        this.http
+          .post<AuthApiResponse>(
+            `${this.apiBaseUrl}/auth/signup`,
+            {
+              name: derivedName,
+              email: normalizedEmail,
+              password,
+            },
+            { withCredentials: true },
+          )
+          .pipe(timeout(15000)),
       );
+
+      if (this.extractAccessToken(response)) {
+        this.applyAuthResponse(response, { requireUser: true });
+      }
 
       return { ok: true };
     } catch (error) {
-      return { ok: false, error: this.getErrorMessage(error, 'We could not create your account right now.') };
+      return { ok: false, error: this.getRegisterErrorMessage(error) };
     }
   }
 
-  signOut(options?: { preserveExpiryGuard?: boolean }): void {
-    if (!options?.preserveExpiryGuard) {
-      this.sessionExpiryHandled = false;
+  async signOut(options?: { navigate?: boolean; showToast?: boolean }): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http
+          .post(`${this.apiBaseUrl}/auth/logout`, {}, { withCredentials: true })
+          .pipe(timeout(10000), catchError(() => of(null))),
+      );
+    } finally {
+      this.clearAuthState();
+
+      if (options?.showToast) {
+        this.toastService.show('Signed out', 'Your session has been cleared.', 'info', 1400);
+      }
+
+      if (options?.navigate ?? true) {
+        void this.router.navigate(['/auth/signin']);
+      }
+    }
+  }
+
+  refreshAccessToken(): Observable<string> {
+    return this.http
+      .post<AuthApiResponse>(`${this.apiBaseUrl}/auth/refresh`, {}, { withCredentials: true })
+      .pipe(
+        timeout(15000),
+        map((response) => {
+          const accessToken = this.extractAccessToken(response);
+
+          if (!accessToken) {
+            throw new Error('Unexpected auth response shape.');
+          }
+
+          return { response, accessToken };
+        }),
+        tap(({ response, accessToken }) => {
+          this.sessionExpiryHandled = false;
+          this.setAccessToken(accessToken);
+
+          const user = this.extractUser(response);
+
+          if (user) {
+            this.setCurrentUser(user);
+          }
+        }),
+        map(({ accessToken }) => accessToken),
+      );
+  }
+
+  restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return Promise.resolve(false);
     }
 
-    this.clearExpiryTimer();
-    this.session.set(null);
-
-    if (isPlatformBrowser(this.platformId)) {
-      this.document.defaultView?.localStorage.removeItem(this.sessionKey);
+    if (this.restorePromise) {
+      return this.restorePromise;
     }
+
+    this.authInitializingState.set(true);
+    this.restorePromise = firstValueFrom(
+      this.refreshAccessToken().pipe(
+        map(() => true),
+        catchError(() => {
+          this.clearAuthState();
+          return of(false);
+        }),
+      ),
+    ).finally(() => {
+      this.authInitializingState.set(false);
+      this.restorePromise = null;
+    });
+
+    return this.restorePromise;
+  }
+
+  getAccessToken(): string | null {
+    return this.accessTokenState();
+  }
+
+  setAccessToken(token: string): void {
+    this.accessTokenState.set(token);
+  }
+
+  clearAccessToken(): void {
+    this.accessTokenState.set(null);
+  }
+
+  getCurrentUser(): AuthUser | null {
+    return this.currentUserState();
+  }
+
+  setCurrentUser(user: AuthUser): void {
+    this.currentUserState.set(user);
+  }
+
+  clearCurrentUser(): void {
+    this.currentUserState.set(null);
+  }
+
+  clearAuthState(): void {
+    this.sessionExpiryHandled = false;
+    this.clearAccessToken();
+    this.clearCurrentUser();
+    this.authInitializingState.set(false);
   }
 
   handleExpiredSession(): void {
-    if (this.sessionExpiryHandled || !this.session()) {
+    if (this.sessionExpiryHandled) {
       return;
     }
-
-    this.sessionExpiryHandled = true;
 
     const currentPath = this.router.url;
     const returnUrl =
@@ -137,78 +229,59 @@ export class AuthService {
         ? currentPath
         : '/';
 
-    this.signOut({ preserveExpiryGuard: true });
+    this.clearAuthState();
+    this.sessionExpiryHandled = true;
     this.toastService.show('Session expired', 'Please sign in again to continue.', 'error', 2200);
     void this.router.navigate(['/auth/signin'], {
       queryParams: returnUrl && returnUrl !== '/' ? { returnUrl } : undefined,
     });
   }
 
-  isAccessTokenExpired(token = this.accessToken()): boolean {
-    if (!token) {
-      return true;
-    }
+  private applyAuthResponse(response: AuthApiResponse, options?: { requireUser?: boolean }): void {
+    const accessToken = this.extractAccessToken(response);
+    const user = this.extractUser(response);
 
-    const expiresAt = this.getJwtExpiryTime(token);
-
-    return expiresAt !== null && expiresAt <= Date.now();
-  }
-
-  private restoreSession(): void {
-    try {
-      const raw = this.document.defaultView?.localStorage.getItem(this.sessionKey);
-
-      if (!raw) {
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as StoredSession;
-
-      if (!parsed?.accessToken || !parsed?.user?.email) {
-        return;
-      }
-
-      this.session.set(parsed);
-      this.scheduleSessionExpiry(parsed.accessToken);
-
-      if (this.isAccessTokenExpired(parsed.accessToken)) {
-        this.handleExpiredSession();
-      }
-    } catch {
-      this.document.defaultView?.localStorage.removeItem(this.sessionKey);
-    }
-  }
-
-  private setSession(session: StoredSession): void {
-    this.sessionExpiryHandled = false;
-    this.session.set(session);
-    this.scheduleSessionExpiry(session.accessToken);
-
-    if (isPlatformBrowser(this.platformId)) {
-      this.document.defaultView?.localStorage.setItem(this.sessionKey, JSON.stringify(session));
-    }
-  }
-
-  private toStoredSession(response: AuthApiResponse): StoredSession {
-    const responseData =
-      response.data && 'email' in response.data ? { user: response.data } : response.data;
-    const user = response.user ?? responseData?.user;
-    const accessToken = response.accessToken ?? responseData?.accessToken ?? response.token ?? responseData?.token;
-
-    if (!user?.email || !accessToken) {
+    if (!accessToken || (options?.requireUser && !user)) {
       throw new Error('Unexpected auth response shape.');
     }
 
+    this.sessionExpiryHandled = false;
+    this.setAccessToken(accessToken);
+
+    if (user) {
+      this.setCurrentUser(user);
+    }
+  }
+
+  private extractAccessToken(response: AuthApiResponse): string | null {
+    const responseData = this.getResponseData(response);
+    const accessToken = response.accessToken ?? responseData?.accessToken ?? response.token ?? responseData?.token;
+
+    return typeof accessToken === 'string' && accessToken.trim() ? accessToken : null;
+  }
+
+  private extractUser(response: AuthApiResponse): AuthUser | null {
+    const responseData = this.getResponseData(response);
+    const user = response.user ?? responseData?.user ?? (this.isAuthApiUser(response.data) ? response.data : null);
+
+    if (!user?.email) {
+      return null;
+    }
+
     return {
-      accessToken,
-      refreshToken: response.refreshToken ?? responseData?.refreshToken ?? null,
-      user: {
-        id: user._id ?? user.id ?? user.email,
-        name: user.name?.trim() || this.deriveNameFromEmail(user.email),
-        email: user.email,
-        phone: user.phone,
-      },
+      id: user._id ?? user.id ?? user.email,
+      name: user.name?.trim() || this.deriveNameFromEmail(user.email),
+      email: user.email,
+      phone: user.phone,
     };
+  }
+
+  private getResponseData(response: AuthApiResponse): { user?: AuthApiUser; token?: string; accessToken?: string } | null {
+    return response.data && !this.isAuthApiUser(response.data) ? response.data : null;
+  }
+
+  private isAuthApiUser(value: unknown): value is AuthApiUser {
+    return Boolean(value && typeof value === 'object' && typeof (value as AuthApiUser).email === 'string');
   }
 
   private deriveNameFromEmail(email: string): string {
@@ -220,13 +293,7 @@ export class AuthService {
       .join(' ');
   }
 
-  private getErrorMessage(error: unknown, fallback: string): string {
-    const message = (error as { error?: { message?: string } })?.error?.message;
-
-    if (typeof message === 'string' && message.trim()) {
-      return message;
-    }
-
+  private getLoginErrorMessage(error: unknown): string {
     if ((error as { name?: string })?.name === 'TimeoutError') {
       return 'The request took too long. Please try again.';
     }
@@ -235,61 +302,46 @@ export class AuthService {
       return 'The backend login response does not match what the app expects.';
     }
 
-    return fallback;
-  }
-
-  private scheduleSessionExpiry(token: string): void {
-    this.clearExpiryTimer();
-
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    const expiresAt = this.getJwtExpiryTime(token);
-
-    if (expiresAt === null) {
-      return;
-    }
-
-    const delay = expiresAt - Date.now();
-
-    if (delay <= 0) {
-      window.setTimeout(() => this.handleExpiredSession(), 0);
-      return;
-    }
-
-    this.expiryTimer = window.setTimeout(() => this.handleExpiredSession(), delay);
-  }
-
-  private clearExpiryTimer(): void {
-    if (!this.expiryTimer || !isPlatformBrowser(this.platformId)) {
-      this.expiryTimer = null;
-      return;
-    }
-
-    window.clearTimeout(this.expiryTimer);
-    this.expiryTimer = null;
-  }
-
-  private getJwtExpiryTime(token: string): number | null {
-    try {
-      const browserWindow = this.document.defaultView;
-      const payload = token.split('.')[1];
-
-      if (!payload || !browserWindow) {
-        return null;
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 0:
+          return 'Could not connect to the server. Please check your connection.';
+        case 401:
+          return 'Invalid email or password.';
+        case 403:
+          return 'Please verify your account before signing in.';
+        case 429:
+          return 'Too many login attempts. Please try again later.';
       }
-
-      const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
-      const paddedPayload = normalizedPayload.padEnd(
-        normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
-        '=',
-      );
-      const decodedPayload = JSON.parse(browserWindow.atob(paddedPayload)) as { exp?: unknown };
-
-      return typeof decodedPayload.exp === 'number' ? decodedPayload.exp * 1000 : null;
-    } catch {
-      return null;
     }
+
+    return 'Incorrect email or password.';
+  }
+
+  private getRegisterErrorMessage(error: unknown): string {
+    if ((error as { name?: string })?.name === 'TimeoutError') {
+      return 'The request took too long. Please try again.';
+    }
+
+    if ((error as { message?: string })?.message === 'Unexpected auth response shape.') {
+      return 'The backend registration response does not match what the app expects.';
+    }
+
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 0:
+          return 'Could not connect to the server. Please check your connection.';
+        case 400:
+          return 'Please check your registration details.';
+        case 409:
+          return 'An account with this email already exists.';
+        case 422:
+          return 'Please fix the highlighted registration details.';
+        case 429:
+          return 'Too many registration attempts. Please try again later.';
+      }
+    }
+
+    return 'We could not create your account right now.';
   }
 }

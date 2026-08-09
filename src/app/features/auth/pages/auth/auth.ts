@@ -25,6 +25,7 @@ export class AuthPageComponent {
   private readonly toastService = inject(ToastService);
 
   protected isSubmitting = false;
+  protected isSigningOut = false;
   protected errorMessage = '';
   protected readonly currentUser = this.authService.currentUser;
   protected readonly mode = computed<'signin' | 'register'>(() =>
@@ -104,6 +105,13 @@ export class AuthPageComponent {
         return;
       }
 
+      if (this.authService.isAuthenticated()) {
+        this.toastService.show('Account created', 'Welcome to Veloura.', 'success', 1500);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
+        void this.router.navigateByUrl(returnUrl);
+        return;
+      }
+
       this.toastService.showExact(
         'Account created',
         'We sent a verification email to your inbox. Check your email before signing in.',
@@ -118,9 +126,18 @@ export class AuthPageComponent {
     }
   }
 
-  protected signOut(): void {
-    this.authService.signOut();
-    this.toastService.show('Signed out', 'Your session has been cleared.', 'info', 1400);
+  protected async signOut(): Promise<void> {
+    if (this.isSigningOut) {
+      return;
+    }
+
+    this.isSigningOut = true;
+
+    try {
+      await this.authService.signOut({ showToast: true });
+    } finally {
+      this.isSigningOut = false;
+    }
   }
 
   protected hasControlError(control: AbstractControl | null, errorKey: string): boolean {
