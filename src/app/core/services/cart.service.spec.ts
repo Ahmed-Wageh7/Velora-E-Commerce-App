@@ -33,6 +33,7 @@ describe('CartService', () => {
     addToCart: vi.fn(),
     getCart: vi.fn(),
     removeItem: vi.fn(),
+    updateItem: vi.fn(),
   };
   const collectionProductsServiceStub = {
     getProductsBySubcategoryId: vi.fn(),
@@ -53,6 +54,7 @@ describe('CartService', () => {
     cartApiServiceStub.addToCart.mockReset();
     cartApiServiceStub.getCart.mockReset();
     cartApiServiceStub.removeItem.mockReset();
+    cartApiServiceStub.updateItem.mockReset();
     collectionProductsServiceStub.getCollectionProductsWithOptions.mockReset();
     collectionProductsServiceStub.getProductsBySubcategoryId.mockReset();
     productsServiceStub.getProducts.mockReset();
@@ -60,6 +62,8 @@ describe('CartService', () => {
     collectionProductsServiceStub.getCollectionProductsWithOptions.mockReturnValue(of([]));
     collectionProductsServiceStub.getProductsBySubcategoryId.mockReturnValue(of([]));
     productsServiceStub.getProducts.mockReturnValue(of([]));
+    cartApiServiceStub.getCart.mockResolvedValue({ ok: true, items: [] });
+    cartApiServiceStub.updateItem.mockResolvedValue({ ok: true });
 
     TestBed.configureTestingModule({
       providers: [

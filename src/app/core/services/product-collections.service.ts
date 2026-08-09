@@ -258,14 +258,14 @@ export class ProductCollectionsService {
   }
 
   private getTotalPages(response: ApiProductsListResponse): number {
-    const pages = response.pagination?.pages;
+    const pages = response.pagination?.pages ?? response.pages;
 
     if (typeof pages === 'number' && pages > 0) {
       return pages;
     }
 
-    const total = response.pagination?.total;
-    const limit = response.pagination?.limit;
+    const total = response.pagination?.total ?? response.total;
+    const limit = response.pagination?.limit ?? response.limit;
 
     if (typeof total === 'number' && typeof limit === 'number' && limit > 0) {
       return Math.ceil(total / limit);

@@ -46,6 +46,10 @@ export interface ApiProductsListResponse
   extends ApiResponseEnvelope<ApiProductRecord[]> {
   products?: ApiProductRecord[];
   pagination?: ApiPagination;
+  page?: number;
+  limit?: number;
+  total?: number;
+  pages?: number;
 }
 
 export interface TaxonomyApiCategory {

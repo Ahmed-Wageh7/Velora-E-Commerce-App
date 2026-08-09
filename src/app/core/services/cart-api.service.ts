@@ -90,6 +90,17 @@ export class CartApiService {
     }
   }
 
+  async updateItem(productId: string, quantity: number): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      await firstValueFrom(
+        this.http.put<CartMutationResponse>(`${this.cartUrl}/${productId}`, { quantity }),
+      );
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: this.getErrorMessage(error) };
+    }
+  }
+
   private extractCartItems(response: CartListResponse): CartApiItem[] {
     const responseData = response.data;
     const rawItems =

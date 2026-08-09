@@ -225,43 +225,24 @@ export class CartService {
       return true;
     }
 
-    if (normalizedQuantity > currentQuantity) {
-      const result = await this.cartApiService.addToCart({
-        productId,
-        quantity: normalizedQuantity - currentQuantity,
-      });
+    if (normalizedQuantity === 0) {
+      const removeResult = await this.removeCartLineFromApi(item);
 
-      if (!result.ok) {
-        this.toastService.show('Could not update cart', result.error, 'error', 2000);
+      if (!removeResult.ok) {
+        this.toastService.show('Could not update cart', removeResult.error, 'error', 2000);
         return false;
       }
 
       return this.syncCartFromApi(true, true);
     }
 
-    const removeResult = await this.removeCartLineFromApi(item);
-
-    if (!removeResult.ok) {
-      this.toastService.show('Could not update cart', removeResult.error, 'error', 2000);
-      return false;
-    }
-
-    if (normalizedQuantity === 0) {
-      return this.syncCartFromApi(true, true);
-    }
-
-    const addResult = await this.cartApiService.addToCart({
+    const updateResult = await this.cartApiService.updateItem(
       productId,
-      quantity: normalizedQuantity,
-    });
+      normalizedQuantity,
+    );
 
-    if (!addResult.ok) {
-      await this.cartApiService.addToCart({
-        productId,
-        quantity: currentQuantity,
-      });
-      await this.syncCartFromApi(true, true);
-      this.toastService.show('Could not update cart', addResult.error, 'error', 2000);
+    if (!updateResult.ok) {
+      this.toastService.show('Could not update cart', updateResult.error, 'error', 2000);
       return false;
     }
 
