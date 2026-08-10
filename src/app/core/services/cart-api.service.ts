@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import {
+  ApiImageValue,
   ApiProductRecord,
   getApiBaseUrl,
   getPrimaryImageUrl,
@@ -35,6 +36,7 @@ export interface CartApiItem {
   coverImage: string | null;
   images: string[];
   quantity: number;
+  detailFolder?: string;
 }
 
 @Injectable({
@@ -57,19 +59,14 @@ export class CartApiService {
         items: response.cart.items.map(
           (item): CartApiItem => ({
             cartItemId: item._id,
-            productId: item.product._id ?? "",
-            name: item.product.name ?? "",
+            productId: String(item.product._id ?? ""),
+            name: item.product.name ?? "Product",
             description: item.product.description,
             price: item.price,
             image: getPrimaryImageUrl(item.product) ?? "",
             coverImage: item.product.coverImage ?? null,
-            images: Array.isArray(item.product.images)
-              ? item.product.images.filter(
-                  (image: unknown): image is string =>
-                    typeof image === "string",
-                )
-              : [],
-            quantity: item.quantity,
+            images: this.extractImages(item.product.images),
+            quantity: Math.max(1, Math.floor(item.quantity)),
           }),
         ),
       };
@@ -139,6 +136,16 @@ export class CartApiService {
     }
   }
 
+  private extractImages(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter(
+      (image: unknown): image is string => typeof image === "string",
+    );
+  }
+
   private getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       const message = error.error?.message;
@@ -149,6 +156,10 @@ export class CartApiService {
 
       if (error.status === 401) {
         return "Please sign in to manage your cart.";
+      }
+
+      if (error.status === 404) {
+        return "Cart service is unavailable right now.";
       }
     }
 

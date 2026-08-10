@@ -9,13 +9,14 @@ import {
 } from "@angular/core";
 import { Router } from "@angular/router";
 import { AuthService } from "./auth.service";
-import { CartApiService, CartApiItem } from "./cart-api.service";
+import { CartApiItem, CartApiService } from "./cart-api.service";
 import { Product } from "./products.service";
 import { ToastService } from "./toast.service";
 
 export interface CartItem {
   id: string;
   productId: string;
+  detailProductId?: string;
   name: string;
   description: string;
   price: number;
@@ -23,6 +24,7 @@ export interface CartItem {
   coverImage: string | null;
   images: string[];
   quantity: number;
+  detailFolder?: string;
 }
 
 @Injectable({
@@ -76,25 +78,27 @@ export class CartService {
       return false;
     }
 
-    const items: CartItem[] = result.items.map(
-      (item: CartApiItem): CartItem => ({
-        id: item.cartItemId,
-        productId: item.productId,
-        name: item.name,
-        description: item.description ?? "",
-        price: item.price,
-        image: item.image,
-        coverImage: item.coverImage,
-        images: item.images,
-        quantity: item.quantity,
-      }),
-    );
-
-    this.cartItems.set(items);
+    this.cartItems.set(result.items.map((item) => this.toCartItem(item)));
 
     return true;
   }
+  async syncCartFromApi(
+    showError = false,
+    _forceSync = false,
+  ): Promise<boolean> {
+    const result = await this.loadCart();
 
+    if (!result && showError) {
+      this.toastService.show(
+        "Could not sync cart",
+        "We could not synchronize your cart right now.",
+        "error",
+        2000,
+      );
+    }
+
+    return result;
+  }
   async addToCart(product: Product, quantity = 1): Promise<boolean> {
     if (!this.requireAuth("Sign in to add products to your cart.")) {
       return false;
@@ -114,6 +118,10 @@ export class CartService {
     }
 
     return this.loadCart();
+  }
+
+  async addToCartWithApi(product: Product, quantity = 1): Promise<boolean> {
+    return this.addToCart(product, quantity);
   }
 
   async updateQuantity(productId: string, quantity: number): Promise<boolean> {
@@ -139,6 +147,14 @@ export class CartService {
     }
 
     return this.loadCart();
+  }
+  async updateQuantityWithApi(
+    item: CartItem | string,
+    quantity: number,
+  ): Promise<boolean> {
+    const productId = typeof item === "string" ? item : item.productId;
+
+    return this.updateQuantity(productId, quantity);
   }
 
   async increment(productId: string): Promise<boolean> {
@@ -181,9 +197,30 @@ export class CartService {
 
     return this.loadCart();
   }
+  async removeItemWithApi(item: CartItem | string): Promise<boolean> {
+    const productId = typeof item === "string" ? item : item.productId;
+
+    return this.removeItem(productId);
+  }
 
   clearCart(): void {
     this.cartItems.set([]);
+  }
+
+  private toCartItem(item: CartApiItem): CartItem {
+    return {
+      id: item.cartItemId,
+      productId: item.productId,
+      detailProductId: item.productId,
+      name: item.name,
+      description: item.description ?? item.name,
+      price: item.price,
+      image: item.image,
+      coverImage: item.coverImage,
+      images: item.images,
+      quantity: item.quantity,
+      detailFolder: item.detailFolder,
+    };
   }
 
   private requireAuth(message: string): boolean {
