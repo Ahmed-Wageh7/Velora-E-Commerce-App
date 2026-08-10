@@ -39,6 +39,9 @@ export interface AuthUser {
   providedIn: "root",
 })
 export class AuthService {
+  private static readonly accessTokenStorageKey = "veloura-auth-access-token";
+  private static readonly currentUserStorageKey = "veloura-auth-current-user";
+
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
@@ -59,6 +62,7 @@ export class AuthService {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
+      this.restoreStoredAuthState();
       void this.restoreSession();
     } else {
       this.authInitializingState.set(false);
@@ -202,7 +206,10 @@ export class AuthService {
         }),
         map(() => true),
         catchError(() => {
-          this.clearAuthState();
+          if (!this.accessTokenState()) {
+            this.clearAuthState();
+          }
+
           return of(false);
         }),
       ),
@@ -220,10 +227,12 @@ export class AuthService {
 
   setAccessToken(token: string): void {
     this.accessTokenState.set(token);
+    this.setStoredValue(AuthService.accessTokenStorageKey, token);
   }
 
   clearAccessToken(): void {
     this.accessTokenState.set(null);
+    this.removeStoredValue(AuthService.accessTokenStorageKey);
   }
 
   getCurrentUser(): AuthUser | null {
@@ -232,10 +241,12 @@ export class AuthService {
 
   setCurrentUser(user: AuthUser): void {
     this.currentUserState.set(user);
+    this.setStoredValue(AuthService.currentUserStorageKey, JSON.stringify(user));
   }
 
   clearCurrentUser(): void {
     this.currentUserState.set(null);
+    this.removeStoredValue(AuthService.currentUserStorageKey);
   }
 
   clearAuthState(): void {
@@ -415,5 +426,61 @@ export class AuthService {
     }
 
     return "We could not create your account right now.";
+  }
+
+  private restoreStoredAuthState(): void {
+    const accessToken = this.getStoredValue(AuthService.accessTokenStorageKey);
+
+    if (accessToken) {
+      this.accessTokenState.set(accessToken);
+    }
+
+    const currentUser = this.getStoredValue(AuthService.currentUserStorageKey);
+
+    if (!currentUser) {
+      return;
+    }
+
+    try {
+      this.currentUserState.set(JSON.parse(currentUser) as AuthUser);
+    } catch {
+      this.removeStoredValue(AuthService.currentUserStorageKey);
+    }
+  }
+
+  private getStoredValue(key: string): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private setStoredValue(key: string, value: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // Storage can be unavailable in private browsing or strict browser modes.
+    }
+  }
+
+  private removeStoredValue(key: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Storage can be unavailable in private browsing or strict browser modes.
+    }
   }
 }
