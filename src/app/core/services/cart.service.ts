@@ -1,136 +1,64 @@
-import { PLATFORM_ID, Injectable, computed, effect, inject, signal } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { AuthService } from './auth.service';
-import { CartApiItem, CartApiService } from './cart-api.service';
-import { CollectionProduct, CollectionProductsService } from './collection-products.service';
-import { Product, ProductsService } from './products.service';
-import { ToastService } from './toast.service';
+import { isPlatformBrowser } from "@angular/common";
+import {
+  PLATFORM_ID,
+  Injectable,
+  computed,
+  effect,
+  inject,
+  signal,
+} from "@angular/core";
+import { Router } from "@angular/router";
+import { AuthService } from "./auth.service";
+import { CartApiService, CartApiItem } from "./cart-api.service";
+import { Product } from "./products.service";
+import { ToastService } from "./toast.service";
 
-export interface CartItem extends Product {
+export interface CartItem {
+  id: string;
+  productId: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  coverImage: string | null;
+  images: string[];
   quantity: number;
 }
 
-type CartItemIdentifier = Pick<CartItem, 'id' | 'detailProductId'>;
-
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root",
 })
 export class CartService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly cartApiService = inject(CartApiService);
-  private readonly collectionProductsService = inject(CollectionProductsService);
-  private readonly productsService = inject(ProductsService);
   private readonly toastService = inject(ToastService);
-  private readonly specialCollectionSubcategoryIds: Record<string, string> = {
-    'Arrogate-collection': '69d50edf9e39253830600b30',
-    'category-frankel': '69d506d49e39253830600ace',
-    'promise-bags': '69d4fe299e39253830600a70',
-  };
+
   private readonly cartItems = signal<CartItem[]>([]);
 
   readonly items = this.cartItems.asReadonly();
+
   readonly total = computed(() =>
-    this.cartItems().reduce((sum, item) => sum + item.price * item.quantity, 0),
+    this.cartItems().reduce(
+      (total, item) => total + item.price * item.quantity,
+      0,
+    ),
   );
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
       effect(() => {
         if (this.authService.isAuthenticated()) {
-          void this.syncCartFromApi(false, true);
-          return;
+          void this.loadCart();
+        } else {
+          this.cartItems.set([]);
         }
-
-        this.cartItems.set([]);
       });
     }
   }
 
-  addToCart(product: Product, quantity = 1): void {
-    const normalizedQuantity = Number.isFinite(quantity) ? Math.max(1, Math.floor(quantity)) : 1;
-
-    this.cartItems.update((items) => {
-      const existingItem = items.find((item) => item.id === product.id);
-
-      if (!existingItem) {
-        return [
-          ...items,
-          {
-            ...product,
-            detailProductId: product.detailProductId ?? product.id,
-            detailFolder: product.detailFolder ?? this.inferDetailFolder(product),
-            quantity: normalizedQuantity,
-          },
-        ];
-      }
-
-      return items.map((item) =>
-        item.id === product.id
-          ? {
-              ...item,
-              detailProductId: item.detailProductId ?? product.detailProductId ?? product.id,
-              detailFolder: item.detailFolder ?? product.detailFolder ?? this.inferDetailFolder(product),
-              quantity: item.quantity + normalizedQuantity,
-            }
-          : item,
-      );
-    });
-  }
-
-  incrementQuantity(productId: string): void {
-    this.cartItems.update((items) =>
-      items.map((item) =>
-        item.id === productId ? { ...item, quantity: item.quantity + 1 } : item,
-      ),
-    );
-  }
-
-  decrementQuantity(productId: string): void {
-    this.cartItems.update((items) =>
-      items
-        .map((item) =>
-          item.id === productId ? { ...item, quantity: item.quantity - 1 } : item,
-        )
-        .filter((item) => item.quantity > 0),
-    );
-  }
-
-  removeItem(productId: string): void {
-    this.removeItemByIdentifiers([productId]);
-  }
-
-  clearCart(): void {
-    this.cartItems.set([]);
-  }
-
-  async setItems(items: CartApiItem[]): Promise<void> {
-    const enrichedItems = await this.enrichCartItems(items);
-    this.cartItems.set(enrichedItems.map((item) => this.hydrateCartItem(item)));
-  }
-
-  async addToCartWithApi(product: Product, quantity = 1): Promise<boolean> {
-    if (!this.ensureAuthenticated('Sign in to add this product to your cart.')) {
-      return false;
-    }
-
-    const result = await this.cartApiService.addToCart({
-      productId: product.id,
-      quantity,
-    });
-
-    if (!result.ok) {
-      this.toastService.show('Could not add product', result.error, 'error', 2000);
-      return false;
-    }
-
-    return this.syncCartFromApi(true, true);
-  }
-
-  async syncCartFromApi(showError = false, forceSync = false): Promise<boolean> {
+  async loadCart(): Promise<boolean> {
     if (!this.authService.isAuthenticated()) {
       return false;
     }
@@ -138,421 +66,135 @@ export class CartService {
     const result = await this.cartApiService.getCart();
 
     if (!result.ok) {
-      if (showError) {
-        this.toastService.show('Could not load cart', result.error, 'error', 2000);
-      }
+      this.toastService.show(
+        "Could not load cart",
+        result.error,
+        "error",
+        2000,
+      );
 
       return false;
     }
 
-    if (forceSync || result.items.length > 0 || this.cartItems().length === 0) {
-      await this.setItems(result.items);
-    }
+    const items: CartItem[] = result.items.map(
+      (item: CartApiItem): CartItem => ({
+        id: item.cartItemId,
+        productId: item.productId,
+        name: item.name,
+        description: item.description ?? "",
+        price: item.price,
+        image: item.image,
+        coverImage: item.coverImage,
+        images: item.images,
+        quantity: item.quantity,
+      }),
+    );
+
+    this.cartItems.set(items);
 
     return true;
   }
 
-  async removeItemWithApi(item: CartItemIdentifier | string): Promise<boolean> {
-    const identifiers = this.getCartItemIdentifiers(item);
-    const previousItems = this.cartItems();
-
-    this.removeItemByIdentifiers(identifiers);
-
-    if (!this.authService.isAuthenticated()) {
-      return true;
-    }
-
-    const result = await this.removeCartLineFromApi(item);
-
-    if (result.ok) {
-      void this.syncCartFromApi(false, true);
-      return true;
-    }
-
-    const synced = await this.syncCartFromApi(false, true);
-
-    if (!synced || !this.cartItems().some((cartItem) => identifiers.some((identifier) => this.matchesCartIdentifier(cartItem, identifier)))) {
-      return true;
-    }
-
-    this.cartItems.set(previousItems);
-    this.toastService.show(
-      'Could not remove product',
-      result.error,
-      'error',
-      2000,
-    );
-    return false;
-  }
-
-  async updateQuantityWithApi(item: CartItem, quantity: number): Promise<boolean> {
-    if (!this.ensureAuthenticated('Sign in to manage your cart.')) {
+  async addToCart(product: Product, quantity = 1): Promise<boolean> {
+    if (!this.requireAuth("Sign in to add products to your cart.")) {
       return false;
     }
 
-    const normalizedQuantity = Number.isFinite(quantity)
-      ? Math.max(0, Math.floor(quantity))
-      : item.quantity;
-    const currentQuantity = Math.max(1, Math.floor(item.quantity));
-    const productId = this.resolveCartProductId(item);
+    const result = await this.cartApiService.addToCart(product.id, quantity);
 
-    if (!productId) {
+    if (!result.ok) {
       this.toastService.show(
-        'Could not update cart',
-        'The cart item is missing its product identifier.',
-        'error',
+        "Could not add product",
+        result.error,
+        "error",
         2000,
       );
+
       return false;
     }
 
-    if (normalizedQuantity === currentQuantity) {
-      return true;
-    }
+    return this.loadCart();
+  }
 
-    if (normalizedQuantity === 0) {
-      const removeResult = await this.removeCartLineFromApi(item);
-
-      if (!removeResult.ok) {
-        this.toastService.show('Could not update cart', removeResult.error, 'error', 2000);
-        return false;
-      }
-
-      return this.syncCartFromApi(true, true);
-    }
-
-    const updateResult = await this.cartApiService.updateItem(
-      productId,
-      normalizedQuantity,
-    );
-
-    if (!updateResult.ok) {
-      this.toastService.show('Could not update cart', updateResult.error, 'error', 2000);
+  async updateQuantity(productId: string, quantity: number): Promise<boolean> {
+    if (!this.requireAuth("Sign in to manage your cart.")) {
       return false;
     }
 
-    return this.syncCartFromApi(true, true);
+    if (quantity <= 0) {
+      return this.removeItem(productId);
+    }
+
+    const result = await this.cartApiService.updateItem(productId, quantity);
+
+    if (!result.ok) {
+      this.toastService.show(
+        "Could not update cart",
+        result.error,
+        "error",
+        2000,
+      );
+
+      return false;
+    }
+
+    return this.loadCart();
   }
 
-  private hydrateCartItem(item: CartItem): CartItem {
-    return {
-      ...item,
-      detailProductId: item.detailProductId ?? item.id,
-      detailFolder: item.detailFolder ?? this.inferDetailFolder(item),
-    };
+  async increment(productId: string): Promise<boolean> {
+    const item = this.cartItems().find((item) => item.productId === productId);
+
+    if (!item) {
+      return false;
+    }
+
+    return this.updateQuantity(productId, item.quantity + 1);
   }
 
-  private inferDetailFolder(item: Pick<Product, 'image' | 'description' | 'detailFolder'>): string | undefined {
-    if (item.detailFolder) {
-      return item.detailFolder;
+  async decrement(productId: string): Promise<boolean> {
+    const item = this.cartItems().find((item) => item.productId === productId);
+
+    if (!item) {
+      return false;
     }
 
-    const folderFromImage = item.image.match(/\/object\/public\/[^/]+\/([^/?#]+)\//)?.[1];
-
-    if (folderFromImage) {
-      return folderFromImage;
-    }
-
-    const description = item.description.toLowerCase();
-
-    if (description.includes('fragrance')) {
-      return 'fragrances';
-    }
-
-    if (description.includes('care product')) {
-      return 'care';
-    }
-
-    if (description.includes('frankel')) {
-      return 'category-frankel';
-    }
-
-    if (description.includes('pink collection')) {
-      return 'pink-collection';
-    }
-
-    if (description.includes('arrogate')) {
-      return 'Arrogate-collection';
-    }
-
-    if (description.includes('topaco')) {
-      return 'category-topaco';
-    }
-
-    if (description.includes('promise bag')) {
-      return 'promise-bags';
-    }
-
-    if (description.includes('art of dedication')) {
-      return 'The-Art-Dedication';
-    }
-
-    return undefined;
+    return this.updateQuantity(productId, item.quantity - 1);
   }
 
-  private getCartItemIdentifiers(item: CartItemIdentifier | string): string[] {
-    const identifiers =
-      typeof item === 'string'
-        ? [item]
-        : [item.detailProductId, item.id].filter((value): value is string => typeof value === 'string');
-
-    return [...new Set(identifiers.map((value) => value.trim()).filter(Boolean))];
-  }
-
-  private removeItemByIdentifiers(identifiers: string[]): void {
-    this.cartItems.update((items) =>
-      items.filter((item) => !identifiers.some((identifier) => this.matchesCartIdentifier(item, identifier))),
-    );
-  }
-
-  private matchesCartIdentifier(item: CartItem, identifier: string): boolean {
-    return item.id === identifier || item.detailProductId === identifier;
-  }
-
-  private resolveCartProductId(item: CartItemIdentifier): string | null {
-    const detailProductId = item.detailProductId?.trim();
-    const cartLineId = item.id.trim();
-
-    if (detailProductId && detailProductId !== cartLineId) {
-      return detailProductId;
+  async removeItem(productId: string): Promise<boolean> {
+    if (!this.requireAuth("Sign in to manage your cart.")) {
+      return false;
     }
 
-    return detailProductId ?? cartLineId ?? null;
+    const result = await this.cartApiService.removeItem(productId);
+
+    if (!result.ok) {
+      this.toastService.show(
+        "Could not remove product",
+        result.error,
+        "error",
+        2000,
+      );
+
+      return false;
+    }
+
+    return this.loadCart();
   }
 
-  private async removeCartLineFromApi(
-    item: CartItemIdentifier | string,
-  ): Promise<{ ok: true } | { ok: false; error: string }> {
-    const identifiers = this.getCartItemIdentifiers(item);
-    let lastError: string | null = null;
-
-    for (const identifier of identifiers) {
-      const result = await this.cartApiService.removeItem(identifier);
-
-      if (!result.ok) {
-        lastError = result.error;
-        continue;
-      }
-
-      return { ok: true };
-    }
-
-    return {
-      ok: false,
-      error: lastError ?? 'The cart item could not be removed right now.',
-    };
+  clearCart(): void {
+    this.cartItems.set([]);
   }
 
-  private resolveDetailProductId(
-    item: CartApiItem,
-    existingItem?: CartItem,
-    product?: Product | CollectionProduct,
-  ): string {
-    if (product?.id) {
-      return product.id;
-    }
-
-    const existingDetailProductId = existingItem?.detailProductId?.trim();
-    const itemDetailProductId = item.detailProductId?.trim();
-    const existingLooksLikeProductId =
-      Boolean(existingDetailProductId) && existingDetailProductId !== existingItem?.id;
-    const itemLooksLikeProductId =
-      Boolean(itemDetailProductId) && itemDetailProductId !== item.id;
-
-    if (existingLooksLikeProductId) {
-      return existingDetailProductId!;
-    }
-
-    if (itemLooksLikeProductId) {
-      return itemDetailProductId!;
-    }
-
-    return existingDetailProductId ?? itemDetailProductId ?? item.id;
-  }
-
-  private ensureAuthenticated(message: string): boolean {
+  private requireAuth(message: string): boolean {
     if (this.authService.isAuthenticated()) {
       return true;
     }
 
-    this.toastService.show('Sign in required', message, 'error', 1800);
-    void this.router.navigate(['/auth/signin']);
+    this.toastService.show("Sign in required", message, "error", 1800);
+
+    void this.router.navigate(["/auth/signin"]);
+
     return false;
-  }
-
-  private async enrichCartItems(items: CartApiItem[]): Promise<CartItem[]> {
-    if (!items.length) {
-      return [];
-    }
-
-    const existingItems = this.cartItems();
-
-    try {
-      const products = await firstValueFrom(this.productsService.getProducts());
-      const productsById = new Map(products.map((product) => [product.id, product] as const));
-      const collectionCache = new Map<string, CollectionProduct[]>();
-
-      return Promise.all(items.map(async (item) => {
-        const candidateProductId = item.detailProductId ?? item.id;
-        const detailFolder = item.detailFolder ?? this.inferDetailFolder({
-          image: item.image ?? '',
-          description: item.description ?? item.name ?? 'Product',
-          detailFolder: item.detailFolder,
-        });
-        const collectionProduct =
-          detailFolder ? await this.findCollectionProduct(detailFolder, item, collectionCache) : undefined;
-        const product =
-          collectionProduct ??
-          productsById.get(candidateProductId) ??
-          productsById.get(item.id);
-        const existingItem = this.findExistingCartMatch(existingItems, item, detailFolder);
-        const productImage =
-          product
-            ? (this.isCatalogProduct(product) ? product.image : product.primaryImageUrl)
-            : undefined;
-        const productPrimaryImage =
-          product
-            ? (this.isCatalogProduct(product) ? product.primaryImage : product.primaryImageUrl)
-            : undefined;
-        const productCoverImage =
-          product
-            ? (this.isCatalogProduct(product) ? product.coverImage : undefined)
-            : undefined;
-        const productCornerImage =
-          product
-            ? (this.isCatalogProduct(product) ? product.cornerImage : undefined)
-            : undefined;
-        const productConerImage =
-          product
-            ? (this.isCatalogProduct(product) ? product.conerImage : undefined)
-            : undefined;
-        const productImages =
-          product && this.isCatalogProduct(product) ? product.images : undefined;
-        const productDetailFolder = product && this.isCatalogProduct(product) ? product.detailFolder : undefined;
-
-        return {
-          id: item.id,
-          detailProductId: this.resolveDetailProductId(item, existingItem, product),
-          name: item.name ?? product?.name ?? 'Product',
-          price: item.price ?? product?.price ?? 0,
-          originalPrice: product?.originalPrice,
-          quantity: item.quantity,
-          description: item.description ?? item.name ?? product?.name ?? 'Product',
-          image: item.image ?? productImage ?? '',
-          images: productImages,
-          primaryImage: productPrimaryImage ?? item.image ?? productImage ?? '',
-          coverImage: productCoverImage,
-          cornerImage: productCornerImage,
-          conerImage: productConerImage,
-          detailFolder:
-            detailFolder ??
-            productDetailFolder ??
-            existingItem?.detailFolder ??
-            this.inferDetailFolder({
-              image: item.image ?? productImage ?? '',
-              description: item.description ?? item.name ?? product?.name ?? 'Product',
-              detailFolder: productDetailFolder,
-            }),
-        };
-      }));
-    } catch {
-      return items.map((item) => {
-        const detailFolder = item.detailFolder ?? this.inferDetailFolder({
-          image: item.image ?? '',
-          description: item.description ?? item.name ?? 'Product',
-          detailFolder: item.detailFolder,
-        });
-        const existingItem = this.findExistingCartMatch(existingItems, item, detailFolder);
-
-        return {
-          id: item.id,
-          detailProductId: this.resolveDetailProductId(item, existingItem),
-          name: item.name ?? existingItem?.name ?? 'Product',
-          price: item.price,
-          quantity: item.quantity,
-          description: item.description ?? existingItem?.description ?? item.name ?? 'Product',
-          image: item.image ?? existingItem?.image ?? '',
-          primaryImage: item.image ?? existingItem?.primaryImage ?? existingItem?.image ?? '',
-          detailFolder:
-            detailFolder ??
-            existingItem?.detailFolder ??
-            this.inferDetailFolder({
-              image: item.image ?? existingItem?.image ?? '',
-              description: item.description ?? existingItem?.description ?? item.name ?? 'Product',
-              detailFolder: item.detailFolder,
-            }),
-        };
-      });
-    }
-  }
-
-  private async findCollectionProduct(
-    detailFolder: string,
-    item: CartApiItem,
-    collectionCache: Map<string, CollectionProduct[]>,
-  ): Promise<CollectionProduct | undefined> {
-    const folder = detailFolder.replace(/^\/|\/$/g, '');
-
-    if (!collectionCache.has(folder)) {
-      const subcategoryId = this.specialCollectionSubcategoryIds[folder];
-      const products = await firstValueFrom(
-        subcategoryId
-          ? this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, true, {
-              includeDeleted: true,
-            })
-          : this.collectionProductsService.getCollectionProductsWithOptions(folder, {
-              includeDeleted: true,
-              fetchAllPages: true,
-            }),
-      );
-      collectionCache.set(folder, products);
-    }
-
-    const products = collectionCache.get(folder) ?? [];
-    const normalizedName = this.normalizeLookup(item.name);
-    const normalizedImage = this.normalizeLookup(item.image);
-
-    return products.find((product) => {
-      const sameName = normalizedName && this.normalizeLookup(product.name) === normalizedName;
-      const sameImage =
-        normalizedImage &&
-        [product.primaryImageUrl, product.hoverImageUrl, product.coverImageUrl]
-          .map((value) => this.normalizeLookup(value))
-          .includes(normalizedImage);
-
-      return Boolean(sameName || sameImage);
-    });
-  }
-
-  private normalizeLookup(value: string | undefined): string {
-    return String(value ?? '')
-      .trim()
-      .toLowerCase()
-      .replace(/^https?:\/\/[^/]+/i, '')
-      .replace(/^\/+/, '');
-  }
-
-  private isCatalogProduct(product: Product | CollectionProduct): product is Product {
-    return 'image' in product;
-  }
-
-  private findExistingCartMatch(
-    existingItems: CartItem[],
-    item: CartApiItem,
-    detailFolder: string | undefined,
-  ): CartItem | undefined {
-    const normalizedName = this.normalizeLookup(item.name);
-    const normalizedImage = this.normalizeLookup(item.image);
-
-    return existingItems.find((existingItem) => {
-      const sameFolder =
-        !detailFolder ||
-        !existingItem.detailFolder ||
-        existingItem.detailFolder === detailFolder;
-      const sameName = normalizedName && this.normalizeLookup(existingItem.name) === normalizedName;
-      const sameImage = normalizedImage && this.normalizeLookup(existingItem.image) === normalizedImage;
-
-      return sameFolder && Boolean(sameName || sameImage);
-    });
   }
 }
