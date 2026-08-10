@@ -75,7 +75,7 @@ export class TopReleasesComponent {
         return;
       }
 
-      await this.router.navigate(['/product', this.detailsFolder, product.id]);
+      await this.router.navigate(['/product', product.id]);
     } finally {
       this.activeTargetId = null;
     }

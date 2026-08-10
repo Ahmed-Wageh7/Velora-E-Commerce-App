@@ -138,7 +138,7 @@
                       @for (relatedProduct of product.relatedProducts; track relatedProduct.id) {
                         <a
                           class="related-card"
-                          [routerLink]="['/product', relatedProduct.folder, relatedProduct.id]"
+                          [routerLink]="['/product', relatedProduct.id]"
                         >
                           <img [src]="relatedProduct.imageUrl" [alt]="relatedProduct.name" class="related-card-image" />
                           <span class="related-card-name">{{ relatedProduct.name }}</span>

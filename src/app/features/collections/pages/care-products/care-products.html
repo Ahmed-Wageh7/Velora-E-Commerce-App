@@ -52,7 +52,7 @@
       <section class="care-grid" aria-label="Care products list">
         @for (product of getVisibleProducts(careProductsState().data); track trackByName($index, product)) {
         <article class="care-card">
-          <a class="product-card-link" [routerLink]="['/product', detailsFolder, product.id]">
+          <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="care-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
               <img
                 class="care-card-image care-card-image-primary media-hover-image"

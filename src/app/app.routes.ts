@@ -10,16 +10,6 @@ export const routes: Routes = [
   },
   {
     path: "product/:id",
-
-    loadComponent: () =>
-      import("./features/catalog/pages/product-details/product-details").then(
-        (module) => module.ProductDetailsPageComponent,
-      ),
-
-    title: "Product Details | Veloura",
-  },
-  {
-    path: "product/:id",
     loadComponent: () =>
       import("./features/catalog/pages/product-details/product-details").then(
         (module) => module.ProductDetailsPageComponent,

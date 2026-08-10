@@ -24,7 +24,7 @@
   <div class="art-grid">
     @for (product of productsState().data; track trackById($index, product)) {
     <article class="art-card">
-      <a class="product-card-link" [routerLink]="['/product', detailsFolder, product.id]">
+      <a class="product-card-link" [routerLink]="['/product', product.id]">
         <div class="art-card-image-wrap" [class.has-hover-image]="!!product.coverImageUrl">
           <img
             [src]="product.imageUrl"

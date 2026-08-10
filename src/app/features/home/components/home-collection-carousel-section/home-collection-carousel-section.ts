@@ -189,6 +189,10 @@ export class HomeCollectionCarouselSectionComponent
         return;
       }
 
+      if (typeof viewport.scrollTo !== "function") {
+        return;
+      }
+
       const maxScrollLeft = viewport.scrollWidth - viewport.clientWidth;
 
       if (maxScrollLeft <= 0) {

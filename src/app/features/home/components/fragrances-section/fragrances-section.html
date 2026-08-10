@@ -23,7 +23,7 @@
     <div class="fragrances-grid">
       @for (product of fragrancesState().data; track trackById($index, product)) {
         <article class="fragrance-card">
-          <a class="product-card-link" [routerLink]="['/product', detailsFolder, product.id]">
+          <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="fragrance-card-image-wrap media-hover-frame">
               <img
                 [src]="product.imageUrl"

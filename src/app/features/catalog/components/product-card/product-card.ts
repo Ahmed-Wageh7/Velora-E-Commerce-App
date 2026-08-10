@@ -12,7 +12,7 @@ export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
 
   protected get productRoute(): (number | string)[] {
-    return this.product.detailFolder ? ['/product', this.product.detailFolder, this.product.id] : ['/product', this.product.id];
+    return ['/product', this.product.id];
   }
 
   protected get primaryImage(): string {

@@ -35,7 +35,7 @@
     <div class="collection-products-grid">
       @for (product of visibleProducts(); track trackById($index, product)) {
         <article class="collection-product-card">
-          <a class="product-card-link" [routerLink]="['/product', detailsFolder(), product.id]">
+          <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="collection-product-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
               <img
                 [src]="product.primaryImageUrl"

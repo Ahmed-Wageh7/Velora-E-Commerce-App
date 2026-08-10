@@ -100,7 +100,7 @@
 
         @if (newCovenantFirstProduct(); as product) {
         <article class="collection-gallery-card collection-gallery-card-featured">
-          <a class="product-card-link" [routerLink]="['/product', currentCollection.folder, product.id]">
+          <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="collection-gallery-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
               <img
                 class="collection-gallery-card-image collection-gallery-card-image-primary media-hover-image"
@@ -159,7 +159,7 @@
       <section class="collection-gallery-grid" [attr.aria-label]="currentCollection.title + ' remaining products list'">
         @for (product of newCovenantRemainingProducts(); track trackById($index, product)) {
         <article class="collection-gallery-card">
-          <a class="product-card-link" [routerLink]="['/product', currentCollection.folder, product.id]">
+          <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="collection-gallery-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
               <img
                 class="collection-gallery-card-image collection-gallery-card-image-primary media-hover-image"
@@ -209,7 +209,7 @@
       <section class="collection-gallery-grid" [attr.aria-label]="currentCollection.title + ' products list'">
         @for (product of products(); track trackById($index, product)) {
         <article class="collection-gallery-card">
-          <a class="product-card-link" [routerLink]="['/product', currentCollection.folder, product.id]">
+          <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="collection-gallery-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
               <img
                 class="collection-gallery-card-image collection-gallery-card-image-primary media-hover-image"

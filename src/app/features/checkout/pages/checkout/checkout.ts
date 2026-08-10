@@ -421,8 +421,7 @@ export class CheckoutPageComponent implements OnDestroy {
     item: CartItem,
   ): Promise<(number | string)[]> {
     const productId = item.productId || item.detailProductId || item.id;
-    const folder = item.detailFolder?.trim();
-    return folder ? ["/product", folder, productId] : ["/product", productId];
+    return ["/product", productId];
   }
 
   private async resolveProductId(item: CartItem): Promise<string> {

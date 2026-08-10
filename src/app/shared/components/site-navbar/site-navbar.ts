@@ -343,7 +343,7 @@ export class SiteNavbar {
       subtitle: collectionLabel,
       collectionLabel,
       imageUrl: product.primaryImageUrl,
-      route: ["/product", folder, product.id],
+      route: ["/product", product.id],
     }));
   }
 
@@ -362,7 +362,7 @@ export class SiteNavbar {
       subtitle: collectionLabel,
       collectionLabel,
       imageUrl: product.primaryImageUrl,
-      route: ["/product", folder, product.id],
+      route: ["/product", product.id],
     }));
   }
 
@@ -377,7 +377,7 @@ export class SiteNavbar {
       subtitle: "Care product",
       collectionLabel: "Care Products",
       imageUrl: product.primaryImageUrl,
-      route: ["/product", "care", product.id],
+      route: ["/product", product.id],
     }));
   }
 
@@ -401,7 +401,7 @@ export class SiteNavbar {
         subtitle: product.detail || product.badge || "Fragrance",
         collectionLabel: "Fragrances",
         imageUrl: product.imageUrl,
-        route: ["/product", "fragrances", product.id],
+        route: ["/product", product.id],
       })),
       ...artProducts.map((product) => ({
         id: `art-${product.id}`,
@@ -409,7 +409,7 @@ export class SiteNavbar {
         subtitle: product.subtitle || "The Art of Dedication",
         collectionLabel: "The Art of Dedication",
         imageUrl: product.imageUrl,
-        route: ["/product", "The-Art-Dedication", product.id],
+        route: ["/product", product.id],
       })),
       ...topacoProducts.map((product) => ({
         id: `topaco-${product.id}`,
@@ -417,7 +417,7 @@ export class SiteNavbar {
         subtitle: "Topaco Collection",
         collectionLabel: "Topaco Collection",
         imageUrl: product.primaryImageUrl,
-        route: ["/product", "category-topaco", product.id],
+        route: ["/product", product.id],
       })),
       ...promiseProducts.map((product) => ({
         id: `promise-${product.id}`,
@@ -425,7 +425,7 @@ export class SiteNavbar {
         subtitle: product.detail || "Promise Bags",
         collectionLabel: "Promise Bags",
         imageUrl: product.imageUrl,
-        route: ["/product", "promise-bags", product.id],
+        route: ["/product", product.id],
       })),
     ];
   }
