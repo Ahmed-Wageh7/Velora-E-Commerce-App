@@ -156,9 +156,35 @@ export class CartService {
     item: CartItem | string,
     quantity: number,
   ): Promise<boolean> {
-    const productId = typeof item === "string" ? item : item.productId;
+    if (typeof item === "string") {
+      return this.updateQuantity(item, quantity);
+    }
 
-    return this.updateQuantity(productId, quantity);
+    if (!this.requireAuth("Sign in to manage your cart.")) {
+      return false;
+    }
+
+    if (quantity <= 0) {
+      return this.removeItemWithApi(item);
+    }
+
+    const result = await this.tryCartMutation(
+      this.getItemMutationIdentifiers(item),
+      (identifier) => this.cartApiService.updateItem(identifier, quantity),
+    );
+
+    if (!result.ok) {
+      this.toastService.show(
+        "Could not update cart",
+        result.error,
+        "error",
+        2000,
+      );
+
+      return false;
+    }
+
+    return this.loadCart();
   }
 
   async increment(productId: string): Promise<boolean> {
@@ -182,33 +208,53 @@ export class CartService {
   }
 
   async removeItem(productId: string): Promise<boolean> {
-    if (!this.requireAuth("Sign in to manage your cart.")) {
-      return false;
-    }
-
-    const result = await this.cartApiService.removeItem(productId);
-
-    if (!result.ok) {
-      this.toastService.show(
-        "Could not remove product",
-        result.error,
-        "error",
-        2000,
-      );
-
-      return false;
-    }
-
-    return this.loadCart();
+    return this.removeItemByIdentifiers([productId]);
   }
   async removeItemWithApi(item: CartItem | string): Promise<boolean> {
-    const productId = typeof item === "string" ? item : item.productId;
+    if (typeof item === "string") {
+      return this.removeItem(item);
+    }
 
-    return this.removeItem(productId);
+    return this.removeItemByIdentifiers(this.getItemMutationIdentifiers(item), item);
   }
 
   clearCart(): void {
     this.cartItems.set([]);
+  }
+
+  private async removeItemByIdentifiers(
+    identifiers: string[],
+    originalItem?: CartItem,
+  ): Promise<boolean> {
+    if (!this.requireAuth("Sign in to manage your cart.")) {
+      return false;
+    }
+
+    let lastError = "We could not update your cart right now.";
+
+    for (const identifier of identifiers) {
+      const result = await this.cartApiService.removeItem(identifier);
+
+      if (!result.ok) {
+        lastError = result.error;
+        continue;
+      }
+
+      const loaded = await this.loadCart();
+
+      if (!loaded || !originalItem || !this.hasCartItem(originalItem)) {
+        return loaded;
+      }
+    }
+
+    this.toastService.show(
+      "Could not remove product",
+      lastError,
+      "error",
+      2000,
+    );
+
+    return false;
   }
 
   private toCartItem(item: CartApiItem): CartItem {
@@ -225,6 +271,44 @@ export class CartService {
       quantity: item.quantity,
       detailFolder: item.detailFolder,
     };
+  }
+
+  private async tryCartMutation(
+    identifiers: string[],
+    mutation: (
+      identifier: string,
+    ) => Promise<{ ok: true } | { ok: false; error: string }>,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    let lastError = "We could not update your cart right now.";
+
+    for (const identifier of identifiers) {
+      const result = await mutation(identifier);
+
+      if (result.ok) {
+        return result;
+      }
+
+      lastError = result.error;
+    }
+
+    return { ok: false, error: lastError };
+  }
+
+  private getItemMutationIdentifiers(item: CartItem): string[] {
+    return [item.productId, item.detailProductId, item.id]
+      .filter((identifier): identifier is string =>
+        Boolean(identifier && identifier.trim()),
+      )
+      .filter((identifier, index, identifiers) =>
+        identifiers.indexOf(identifier) === index,
+      );
+  }
+
+  private hasCartItem(originalItem: CartItem): boolean {
+    return this.cartItems().some(
+      (item) =>
+        item.id === originalItem.id || item.productId === originalItem.productId,
+    );
   }
 
   private requireAuth(message: string): boolean {
