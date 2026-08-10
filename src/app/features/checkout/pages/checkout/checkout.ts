@@ -205,7 +205,12 @@ export class CheckoutPageComponent implements OnDestroy {
     this.clearLineItemState();
 
     if (removed) {
-      this.toastService.showCartStatus("Product deleted successfully", "", "success", 1600);
+      this.toastService.showCartStatus(
+        "Product deleted successfully",
+        "",
+        "success",
+        1600,
+      );
     }
   }
 
@@ -417,16 +422,6 @@ export class CheckoutPageComponent implements OnDestroy {
   ): Promise<(number | string)[]> {
     const productId = await this.resolveProductId(item);
     const folder = item.detailFolder?.trim();
-
-    if (folder) {
-      const recoveredProduct = await firstValueFrom(
-        this.productDetailsService.recoverProductDetails(folder, item),
-      );
-
-      if (recoveredProduct) {
-        return ["/product", folder, recoveredProduct.id];
-      }
-    }
 
     return folder ? ["/product", folder, productId] : ["/product", productId];
   }

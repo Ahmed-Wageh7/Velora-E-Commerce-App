@@ -215,7 +215,10 @@ export class CartService {
       return this.removeItem(item);
     }
 
-    return this.removeItemByIdentifiers(this.getItemMutationIdentifiers(item), item);
+    return this.removeItemByIdentifiers(
+      this.getItemMutationIdentifiers(item),
+      item,
+    );
   }
 
   clearCart(): void {
@@ -299,15 +302,17 @@ export class CartService {
       .filter((identifier): identifier is string =>
         Boolean(identifier && identifier.trim()),
       )
-      .filter((identifier, index, identifiers) =>
-        identifiers.indexOf(identifier) === index,
+      .filter(
+        (identifier, index, identifiers) =>
+          identifiers.indexOf(identifier) === index,
       );
   }
 
   private hasCartItem(originalItem: CartItem): boolean {
     return this.cartItems().some(
       (item) =>
-        item.id === originalItem.id || item.productId === originalItem.productId,
+        item.id === originalItem.id ||
+        item.productId === originalItem.productId,
     );
   }
 
@@ -323,3 +328,107 @@ export class CartService {
     return false;
   }
 }
+
+// USER OPENS APP
+//       │
+//       ▼
+// Angular starts
+//       │
+//       ▼
+// AuthService initializes
+//       │
+//       ▼
+// Does user have valid session?
+//       │
+//       ├── No ───────► isAuthenticated = false
+//       │                    │
+//       │                    ▼
+//       │               Cart = []
+//       │
+//       └── Yes
+//            │
+//            ▼
+//    Refresh HttpOnly Cookie
+//            │
+//            ▼
+//    Backend returns Access Token
+//            │
+//            ▼
+//    Access Token stored in memory
+//            │
+//            ▼
+//    isAuthenticated = true
+//            │
+//            ▼
+//    CartService effect detects it
+//            │
+//            ▼
+//         loadCart()
+//            │
+//            ▼
+//     CartApiService.getCart()
+//            │
+//            ▼
+//         GET /cart
+//            │
+//            ▼
+//       Auth Interceptor
+//            │
+//            ▼
+//  Authorization: Bearer token
+//            │
+//            ▼
+//         Backend
+//            │
+//            ▼
+//       User's Cart
+//            │
+//            ▼
+//       map response
+//            │
+//            ▼
+//       cartItems.set()
+//            │
+//            ▼
+//            UI updates
+
+// Product Card
+//      │
+//      ▼
+// cartService.addToCart(product)
+//      │
+//      ▼
+// waitForInitialization()
+//      │
+//      ▼
+// requireAuth()
+//      │
+//      ▼
+// CartApiService.addToCart()
+//      │
+//      ▼
+// POST /cart
+//      │
+//      ▼
+// Auth Interceptor
+//      │
+//      ▼
+// Backend
+//      │
+//      ▼
+// Success
+//      │
+//      ▼
+// loadCart()
+//      │
+//      ▼
+// GET /cart
+//      │
+//      ▼
+// cartItems.set(...)
+//      │
+//      ▼
+// computed total updates
+//      │
+//      ▼
+// UI updates

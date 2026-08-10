@@ -9,16 +9,16 @@ import {
   viewChild,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 import { Title } from "@angular/platform-browser";
 import { catchError, map, of, startWith, switchMap } from "rxjs";
+
 import { CartAnimationService } from "../../../../core/services/cart-animation.service";
-import { CartItem, CartService } from "../../../../core/services/cart.service";
+import { CartService } from "../../../../core/services/cart.service";
 import {
   ProductDetails,
   ProductDetailsService,
 } from "../../../../core/services/product-details.service";
-import { ProductsService } from "../../../../core/services/products.service";
 import { ToastService } from "../../../../core/services/toast.service";
 import { SiteNavbar } from "../../../../shared/components/site-navbar/site-navbar";
 import { RequestState } from "../../../../core/utils/request-state";
@@ -32,11 +32,9 @@ import { RequestState } from "../../../../core/utils/request-state";
 export class ProductDetailsPageComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly title = inject(Title);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly productDetailsService = inject(ProductDetailsService);
-  private readonly productsService = inject(ProductsService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
   protected isAddingToCart = false;
@@ -51,85 +49,7 @@ export class ProductDetailsPageComponent {
       const folder = params.get("folder");
       const id = params.get("id");
 
-      if (folder && id) {
-        const navigationHint = this.getNavigationCartHint(folder);
-
-        return this.productDetailsService.getProductDetails(folder, id).pipe(
-          switchMap((product) => {
-            if (product) {
-              return of({
-                status: "success",
-                data: product,
-                message: "",
-              } satisfies RequestState<ProductDetails | null>);
-            }
-
-            const cartItem =
-              navigationHint ?? this.findMatchingCartItem(folder, id);
-
-            if (!cartItem) {
-              return of({
-                status: "empty",
-                data: null,
-                message: "The product you requested could not be found.",
-              } satisfies RequestState<ProductDetails | null>);
-            }
-
-            return this.productDetailsService
-              .recoverProductDetails(folder, cartItem)
-              .pipe(
-                map((recoveredProduct) =>
-                  recoveredProduct
-                    ? ({
-                        status: "success",
-                        data: recoveredProduct,
-                        message: "",
-                      } satisfies RequestState<ProductDetails | null>)
-                    : ({
-                        status: "empty",
-                        data: null,
-                        message:
-                          "The product you requested could not be found.",
-                      } satisfies RequestState<ProductDetails | null>),
-                ),
-              );
-          }),
-          catchError(() => {
-            const cartItem =
-              navigationHint ?? this.findMatchingCartItem(folder, id);
-
-            if (!cartItem) {
-              return of({
-                status: "error",
-                data: null,
-                message: "We could not load this product right now.",
-              } satisfies RequestState<ProductDetails | null>);
-            }
-
-            return this.productDetailsService
-              .recoverProductDetails(folder, cartItem)
-              .pipe(
-                map((recoveredProduct) =>
-                  recoveredProduct
-                    ? ({
-                        status: "success",
-                        data: recoveredProduct,
-                        message: "",
-                      } satisfies RequestState<ProductDetails | null>)
-                    : ({
-                        status: "error",
-                        data: null,
-                        message: "We could not load this product right now.",
-                      } satisfies RequestState<ProductDetails | null>),
-                ),
-              );
-          }),
-        );
-      }
-
-      const legacyId = params.get("id");
-
-      if (!legacyId) {
+      if (!folder || !id) {
         return of({
           status: "empty",
           data: null,
@@ -137,54 +57,29 @@ export class ProductDetailsPageComponent {
         } satisfies RequestState<ProductDetails | null>);
       }
 
-      return this.productsService.getProductById(legacyId).pipe(
-        map((product) => {
-          if (!product) {
-            return {
-              status: "empty",
-              data: null,
-              message: "The product you requested could not be found.",
-            } satisfies RequestState<ProductDetails | null>;
-          }
+      return this.productDetailsService.getProductDetails(folder, id).pipe(
+        map(
+          (product) =>
+            ({
+              status: product ? "success" : "empty",
+              data: product,
+              message: product
+                ? ""
+                : "The product you requested could not be found.",
+            }) satisfies RequestState<ProductDetails | null>,
+        ),
+        catchError((error) => {
+          console.error("PRODUCT DETAILS ERROR:", error);
 
-          return {
-            status: "success",
-            data: {
-              id: product.id,
-              folder: "catalog",
-              name: product.name,
-              title: product.name,
-              subtitle: "",
-              badge: "",
-              detail: "",
-              description: product.description,
-              price: product.price,
-              originalPrice: product.price,
-              quantity: 1,
-              imageUrl: product.image,
-              hoverImageUrl: product.image,
-              galleryImageUrls: [product.image],
-              sku: `catalog-${String(product.id).padStart(3, "0")}`,
-              size: "Standard size",
-              productType: "Product",
-              status: "In Stock",
-              rating: 5,
-              reviewsCount: 0,
-              sections: [],
-              relatedProducts: [],
-            } satisfies ProductDetails,
-            message: "",
-          } satisfies RequestState<ProductDetails | null>;
-        }),
-        catchError(() =>
-          of({
+          return of({
             status: "error",
             data: null,
             message: "We could not load this product right now.",
-          } satisfies RequestState<ProductDetails | null>),
-        ),
+          } satisfies RequestState<ProductDetails | null>);
+        }),
       );
     }),
+
     startWith({
       status: "loading",
       data: null,
@@ -356,54 +251,5 @@ export class ProductDetailsPageComponent {
 
   private waitForButtonFeedback(): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, 240));
-  }
-
-  private findMatchingCartItem(
-    folder: string,
-    id: string,
-  ): CartItem | undefined {
-    return this.cartService
-      .items()
-      .find(
-        (item) =>
-          item.detailFolder?.trim() === folder &&
-          [item.id, item.detailProductId].some(
-            (value) => String(value ?? "").trim() === id,
-          ),
-      );
-  }
-
-  private getNavigationCartHint(folder: string): CartItem | null {
-    const state = (this.router.getCurrentNavigation()?.extras.state ??
-      history.state) as {
-      cartProductHint?: Partial<CartItem>;
-    } | null;
-
-    const hint = state?.cartProductHint;
-
-    if (!hint || hint.detailFolder?.trim() !== folder) {
-      return null;
-    }
-
-    const productId =
-      typeof hint.detailProductId === "string" && hint.detailProductId.trim()
-        ? hint.detailProductId.trim()
-        : typeof hint.productId === "string" && hint.productId.trim()
-          ? hint.productId.trim()
-          : "";
-
-    return {
-      id: String(hint.id ?? ""),
-      productId,
-      detailProductId: productId || undefined,
-      detailFolder: hint.detailFolder,
-      name: hint.name ?? "",
-      price: typeof hint.price === "number" ? hint.price : 0,
-      description: hint.description ?? "",
-      image: hint.image ?? "",
-      coverImage: hint.coverImage ?? null,
-      images: Array.isArray(hint.images) ? hint.images : [],
-      quantity: typeof hint.quantity === "number" ? hint.quantity : 1,
-    };
   }
 }

@@ -65,6 +65,7 @@ export class AuthService {
       this.restoreStoredAuthState();
       void this.restoreSession();
     } else {
+      // خلصنا تحديد اللوجن بتاع اليوزر
       this.authInitializingState.set(false);
     }
   }
@@ -241,7 +242,10 @@ export class AuthService {
 
   setCurrentUser(user: AuthUser): void {
     this.currentUserState.set(user);
-    this.setStoredValue(AuthService.currentUserStorageKey, JSON.stringify(user));
+    this.setStoredValue(
+      AuthService.currentUserStorageKey,
+      JSON.stringify(user),
+    );
   }
 
   clearCurrentUser(): void {
@@ -484,3 +488,20 @@ export class AuthService {
     }
   }
 }
+
+// initializeAuth()
+//      │
+//      ├────── network request ───────┐
+//      │                             │
+// loadCart()                         │
+//      │                             │
+// await waitForInitialization() ⏳   │
+//      │                             │
+//      │                             ▼
+//      │                       Auth finishes
+//      │                             │
+//      ◄─────────────────────────────┘
+//      │
+// isAuthenticated() = true ✅
+//      │
+// getCart()

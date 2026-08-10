@@ -25,5 +25,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([accessTokenInterceptor, refreshTokenInterceptor]),
     ),
+    provideClientHydration(),
   ],
 };

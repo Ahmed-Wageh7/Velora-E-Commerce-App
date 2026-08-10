@@ -2,7 +2,6 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import {
-  ApiImageValue,
   ApiProductRecord,
   getApiBaseUrl,
   getPrimaryImageUrl,
@@ -166,3 +165,47 @@ export class CartApiService {
     return "We could not update your cart right now.";
   }
 }
+
+// ┌─────────────────────────────┐
+// │         COMPONENT           │
+// │ Cart / Product / Navbar     │
+// └──────────────┬──────────────┘
+//                │
+//                ▼
+// ┌─────────────────────────────┐
+// │        CartService          │
+// │                             │
+// │ Signals                     │
+// │ Business Logic              │
+// │ Authentication checks       │
+// │ Total                       │
+// │ Add / Update / Remove       │
+// └──────────────┬──────────────┘
+//                │
+//                ▼
+// ┌─────────────────────────────┐
+// │       CartApiService        │
+// │                             │
+// │ GET /cart                   │
+// │ POST /cart                  │
+// │ PUT /cart/:id               │
+// │ DELETE /cart/:id            │
+// │ Response Mapping            │
+// │ Error Mapping               │
+// └──────────────┬──────────────┘
+//                │
+//                ▼
+// ┌─────────────────────────────┐
+// │        HttpClient           │
+// │             +               │
+// │      Auth Interceptor       │
+// └──────────────┬──────────────┘
+//                │
+//                ▼
+// ┌─────────────────────────────┐
+// │          BACKEND            │
+// │                             │
+// │ JWT verification            │
+// │ User Cart                   │
+// │ Database                    │
+// └─────────────────────────────┘
