@@ -25,16 +25,12 @@ export class CartService {
   private readonly collectionProductsService = inject(CollectionProductsService);
   private readonly productsService = inject(ProductsService);
   private readonly toastService = inject(ToastService);
-  private readonly storageKey = 'veloura-cart-items';
-  private readonly legacyStorageKey = this.storageKey;
-  private readonly guestStorageScope = 'guest';
   private readonly specialCollectionSubcategoryIds: Record<string, string> = {
     'Arrogate-collection': '69d50edf9e39253830600b30',
     'category-frankel': '69d506d49e39253830600ace',
     'promise-bags': '69d4fe299e39253830600a70',
   };
   private readonly cartItems = signal<CartItem[]>([]);
-  private activeStorageKey = '';
 
   readonly items = this.cartItems.asReadonly();
   readonly total = computed(() =>
@@ -43,24 +39,13 @@ export class CartService {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.restoreScopedCart();
-
       effect(() => {
-        this.restoreScopedCart();
-
         if (this.authService.isAuthenticated()) {
           void this.syncCartFromApi(false, true);
-        }
-      });
-
-      effect(() => {
-        const storageKey = this.activeStorageKey;
-
-        if (!storageKey) {
           return;
         }
 
-        window.localStorage.setItem(storageKey, JSON.stringify(this.cartItems()));
+        this.cartItems.set([]);
       });
     }
   }
@@ -249,67 +234,6 @@ export class CartService {
     return this.syncCartFromApi(true, true);
   }
 
-  private restoreScopedCart(): void {
-    const storageKey = this.getScopedStorageKey();
-
-    if (storageKey === this.activeStorageKey) {
-      return;
-    }
-
-    this.activeStorageKey = storageKey;
-    this.restoreCart(storageKey);
-  }
-
-  private restoreCart(storageKey: string): void {
-    try {
-      const savedCart = this.readSavedCart(storageKey);
-
-      if (!savedCart) {
-        this.cartItems.set([]);
-        return;
-      }
-
-      const parsedCart = JSON.parse(savedCart);
-
-      if (!Array.isArray(parsedCart)) {
-        return;
-      }
-
-      const validItems = parsedCart
-        .filter((item): item is CartItem => this.isCartItem(item))
-        .map((item) => this.hydrateCartItem(item));
-      this.cartItems.set(validItems);
-    } catch {
-      window.localStorage.removeItem(storageKey);
-      this.cartItems.set([]);
-    }
-  }
-
-  private readSavedCart(storageKey: string): string | null {
-    const savedCart = window.localStorage.getItem(storageKey);
-
-    if (savedCart) {
-      return savedCart;
-    }
-
-    const legacyCart = window.localStorage.getItem(this.legacyStorageKey);
-
-    if (!legacyCart) {
-      return null;
-    }
-
-    window.localStorage.setItem(storageKey, legacyCart);
-    window.localStorage.removeItem(this.legacyStorageKey);
-    return legacyCart;
-  }
-
-  private getScopedStorageKey(): string {
-    const user = this.authService.currentUser?.();
-    const scope = user?.id?.trim() || user?.email?.trim().toLowerCase() || this.guestStorageScope;
-
-    return `${this.storageKey}:${scope}`;
-  }
-
   private hydrateCartItem(item: CartItem): CartItem {
     return {
       ...item,
@@ -364,25 +288,6 @@ export class CartService {
     }
 
     return undefined;
-  }
-
-  private isCartItem(value: unknown): value is CartItem {
-    if (!value || typeof value !== 'object') {
-      return false;
-    }
-
-    const item = value as Partial<CartItem>;
-
-    return (
-      typeof item.id === 'string' &&
-      typeof item.name === 'string' &&
-      typeof item.image === 'string' &&
-      typeof item.price === 'number' &&
-      (typeof item.detailFolder === 'undefined' || typeof item.detailFolder === 'string') &&
-      (typeof item.detailProductId === 'undefined' || typeof item.detailProductId === 'string') &&
-      typeof item.quantity === 'number' &&
-      item.quantity > 0
-    );
   }
 
   private getCartItemIdentifiers(item: CartItemIdentifier | string): string[] {
