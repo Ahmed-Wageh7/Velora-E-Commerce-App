@@ -25,14 +25,12 @@ import {
   getProductQuantity,
 } from "./product-api.utils";
 import { ProductCollectionsService } from "./product-collections.service";
-
 interface ProductDetailsApiSection {
   title?: string;
   heading?: string;
   body?: string | string[];
   content?: string | string[];
 }
-
 interface ProductDetailsApiRecord extends ApiProductRecord {
   title?: string;
   subtitle?: string;
@@ -47,16 +45,13 @@ interface ProductDetailsApiRecord extends ApiProductRecord {
   reviewCount?: number;
   sections?: ProductDetailsApiSection[];
 }
-
 interface ProductDetailsApiResponse extends ApiResponseEnvelope<ProductDetailsApiRecord> {
   product?: ProductDetailsApiRecord | null;
 }
-
 export interface ProductDetailsSection {
   title: string;
   lines: string[];
 }
-
 export interface RelatedProductSummary {
   id: string;
   folder: string;
@@ -65,7 +60,6 @@ export interface RelatedProductSummary {
   originalPrice: number;
   imageUrl: string;
 }
-
 export interface ProductDetails {
   id: string;
   folder: string;
@@ -92,7 +86,6 @@ export interface ProductDetails {
   sections: ProductDetailsSection[];
   relatedProducts: RelatedProductSummary[];
 }
-
 export interface ProductLookupHint {
   id?: string;
   detailProductId?: string;
@@ -100,7 +93,6 @@ export interface ProductLookupHint {
   image?: string;
   description?: string;
 }
-
 @Injectable({
   providedIn: "root",
 })
@@ -118,40 +110,33 @@ export class ProductDetailsService {
     "category-frankel": "69d506d49e39253830600ace",
     "promise-bags": "69d4fe299e39253830600a70",
   };
-
-  getProductDetails(
-    folder: string,
-    id: string,
-  ): Observable<ProductDetails | null> {
-    const normalizedFolder = folder.replace(/^\/|\/$/g, "");
-    const cacheKey = `${normalizedFolder}:${id}`;
-
+  getProductDetails(id: string): Observable<ProductDetails | null> {
+    const normalizedId = id.trim();
+    if (!normalizedId) {
+      return of(null);
+    }
+    const cacheKey = normalizedId;
     return this.getOrCreateCachedDetailsRequest(cacheKey, () =>
       this.http
         .get<
           ProductDetailsApiResponse | ProductDetailsApiRecord
-        >(buildProductByIdUrl(id))
+        >(buildProductByIdUrl(normalizedId))
         .pipe(
           map((response) => this.extractProductRecord(response)),
           switchMap((product) => {
             if (!product) {
               return of(null);
             }
-
+            const folder = this.inferFolderFromProduct(product);
             return this.getRelatedProducts(product).pipe(
               map((relatedProducts) =>
-                this.toProductDetails(
-                  normalizedFolder,
-                  product,
-                  relatedProducts,
-                ),
+                this.toProductDetails(folder, product, relatedProducts),
               ),
             );
           }),
         ),
     );
   }
-
   private toProductDetails(
     folder: string,
     product: ProductDetailsApiRecord,
@@ -167,7 +152,6 @@ export class ProductDetailsService {
       product.size != null ? String(product.size) : this.inferSize(product);
     const productType = product.productType ?? this.inferProductType(folder);
     const quantity = product.isDeleted ? 0 : getProductQuantity(product);
-
     return {
       id: productId,
       folder,
@@ -195,7 +179,6 @@ export class ProductDetailsService {
       relatedProducts,
     };
   }
-
   private toSections(
     folder: string,
     product: ProductDetailsApiRecord,
@@ -204,11 +187,9 @@ export class ProductDetailsService {
       return product.sections
         .map((section) => {
           const lines = this.normalizeLines(section.body ?? section.content);
-
           if (!lines.length) {
             return null;
           }
-
           return {
             title: section.title ?? section.heading ?? "Product details",
             lines,
@@ -218,9 +199,7 @@ export class ProductDetailsService {
           (section): section is ProductDetailsSection => section !== null,
         );
     }
-
     const fallbackSections: ProductDetailsSection[] = [];
-
     if (product.detail || product.subtitle) {
       fallbackSections.push({
         title: "Product details",
@@ -231,7 +210,6 @@ export class ProductDetailsService {
         ),
       });
     }
-
     fallbackSections.push({
       title: "Details",
       lines: [
@@ -239,20 +217,16 @@ export class ProductDetailsService {
         `Product type: ${product.productType ?? this.inferProductType(folder)}`,
       ],
     });
-
     return fallbackSections.filter((section) => section.lines.length > 0);
   }
-
   private normalizeLines(value: string | string[] | undefined): string[] {
     if (!value) {
       return [];
     }
-
     return (Array.isArray(value) ? value : [value])
       .map((line) => this.cleanText(line))
       .filter((line): line is string => Boolean(line));
   }
-
   private inferSize(product: ProductDetailsApiRecord): string {
     return (
       this.cleanText(product.detail) ||
@@ -260,58 +234,48 @@ export class ProductDetailsService {
       "Standard size"
     );
   }
-
   private inferProductType(folder: string): string {
     const normalizedFolder = folder.toLowerCase();
-
     if (normalizedFolder.includes("watch")) {
       return "Watch";
     }
-
     if (normalizedFolder.includes("bag")) {
       return "Bag";
     }
-
     if (normalizedFolder.includes("glass")) {
       return "Sunglasses";
     }
-
     if (normalizedFolder.includes("care")) {
       return "Care product";
     }
-
     return "Perfume";
   }
-
   private extractProductRecord(
     response: ProductDetailsApiResponse | ProductDetailsApiRecord,
   ): ProductDetailsApiRecord | null {
     if (response && typeof response === "object" && "product" in response) {
       return response.product ?? null;
     }
-
     const data = extractApiData<
       | ProductDetailsApiRecord
-      | { product?: ProductDetailsApiRecord | null }
+      | {
+          product?: ProductDetailsApiRecord | null;
+        }
       | null
       | undefined
     >(response as ProductDetailsApiResponse);
-
     if (data && typeof data === "object" && "product" in data) {
       return data.product ?? null;
     }
-
     return data && typeof data === "object"
       ? (data as ProductDetailsApiRecord)
       : null;
   }
-
   private getRelatedProducts(
     product: ProductDetailsApiRecord,
   ): Observable<RelatedProductSummary[]> {
     const currentProductId = getProductId(product);
     const subcategoryId = this.getRefId(product.subcategory);
-
     if (subcategoryId) {
       return this.productCollectionsService
         .getProductsBySubcategoryId(subcategoryId, true)
@@ -324,9 +288,7 @@ export class ProductDetailsService {
           ),
         );
     }
-
     const categoryId = this.getRefId(product.category);
-
     if (categoryId) {
       return this.productCollectionsService
         .getProductsByCategoryId(categoryId)
@@ -339,10 +301,8 @@ export class ProductDetailsService {
           ),
         );
     }
-
     return of([]);
   }
-
   private toRelatedProductSummary(
     product: ApiProductRecord,
   ): RelatedProductSummary {
@@ -355,45 +315,36 @@ export class ProductDetailsService {
       imageUrl: getPrimaryImageUrl(product),
     };
   }
-
   private getRefId(
     value: string | ApiCategoryRef | null | undefined,
   ): string | null {
     if (!value) {
       return null;
     }
-
     if (typeof value === "string") {
       return value;
     }
-
     return value._id ?? value.id ?? null;
   }
-
   private inferFolderFromProduct(product: ApiProductRecord): string {
     const categoryName = this.getRefName(product.category).toLowerCase();
     const subcategoryName = this.getRefName(product.subcategory).toLowerCase();
-
     if (categoryName.includes("perfume")) {
       if (subcategoryName.includes("arrogate")) {
         return "Arrogate-collection";
       }
-
       if (subcategoryName.includes("frankel")) {
         return "category-frankel";
       }
-
       if (subcategoryName.includes("pink")) {
         return "pink-collection";
       }
-
       if (
         subcategoryName.includes("topacco") ||
         subcategoryName.includes("topaco")
       ) {
         return "category-topaco";
       }
-
       if (
         subcategoryName.includes("art-of-detecation") ||
         subcategoryName.includes("art of dedication")
@@ -401,76 +352,59 @@ export class ProductDetailsService {
         return "The-Art-Dedication";
       }
     }
-
     if (categoryName.includes("sunglasses")) {
       if (subcategoryName.includes("women")) {
         return "women-sunglasses";
       }
-
       if (subcategoryName.includes("men")) {
         return "men-sunglasses";
       }
     }
-
     if (categoryName.includes("bags")) {
       if (subcategoryName.includes("promise")) {
         return "promise-bags";
       }
-
       if (subcategoryName.includes("women")) {
         return "women-bags";
       }
-
       if (subcategoryName.includes("children")) {
         return "children-bags";
       }
     }
-
     if (categoryName.includes("watches")) {
       if (subcategoryName.includes("women")) {
         return "women-watches";
       }
-
       if (subcategoryName.includes("sport")) {
         return "sports-watches";
       }
-
       if (subcategoryName.includes("classic")) {
         return "classic-watches";
       }
     }
-
     if (categoryName.includes("care")) {
       return "care";
     }
-
     return "catalog";
   }
-
   private getRefName(
     value: string | ApiCategoryRef | null | undefined,
   ): string {
     if (!value || typeof value === "string") {
       return "";
     }
-
     return value.name ?? "";
   }
-
   private cleanText(value: string | null | undefined): string | null {
     if (typeof value !== "string") {
       return null;
     }
-
     const normalized = value.trim();
-
     if (!normalized || normalized === '""' || normalized === "''") {
       return null;
     }
-
     return normalized;
   }
-
   private findMatchingProductId(
     products: ApiProductRecord[],
     hint: ProductLookupHint,
@@ -481,15 +415,12 @@ export class ProductDetailsService {
     const preferredIds = [hint.detailProductId, hint.id]
       .map((value) => String(value ?? "").trim())
       .filter(Boolean);
-
     const idMatch = products.find((product) =>
       preferredIds.includes(getProductId(product)),
     );
-
     if (idMatch) {
       return getProductId(idMatch);
     }
-
     const exactNameAndImageMatch = products.find((product) => {
       const sameName =
         normalizedName && this.normalizeLookup(product.name) === normalizedName;
@@ -498,39 +429,31 @@ export class ProductDetailsService {
         this.productImages(product).includes(normalizedImage);
       return Boolean(sameName && sameImage);
     });
-
     if (exactNameAndImageMatch) {
       return getProductId(exactNameAndImageMatch);
     }
-
     const nameMatch = products.find(
       (product) =>
         normalizedName && this.normalizeLookup(product.name) === normalizedName,
     );
-
     if (nameMatch) {
       return getProductId(nameMatch);
     }
-
     const imageMatch = products.find(
       (product) =>
         normalizedImage &&
         this.productImages(product).includes(normalizedImage),
     );
-
     if (imageMatch) {
       return getProductId(imageMatch);
     }
-
     const descriptionMatch = products.find(
       (product) =>
         normalizedDescription &&
         normalizedDescription.includes(this.normalizeLookup(product.name)),
     );
-
     return descriptionMatch ? getProductId(descriptionMatch) : null;
   }
-
   private productImages(product: ApiProductRecord): string[] {
     return [
       getPrimaryImageUrl(product),
@@ -540,7 +463,6 @@ export class ProductDetailsService {
       .map((value) => this.normalizeLookup(value))
       .filter(Boolean);
   }
-
   private normalizeLookup(value: string | null | undefined): string {
     return String(value ?? "")
       .trim()
@@ -548,17 +470,14 @@ export class ProductDetailsService {
       .replace(/^https?:\/\/[^/]+/i, "")
       .replace(/^\/+/, "");
   }
-
   private getOrCreateCachedDetailsRequest(
     cacheKey: string,
     createRequest: () => Observable<ProductDetails | null>,
   ): Observable<ProductDetails | null> {
     const cached = this.productDetailsCache.get(cacheKey);
-
     if (cached) {
       return cached;
     }
-
     const request$ = createRequest().pipe(
       catchError((error) => {
         this.productDetailsCache.delete(cacheKey);
@@ -566,7 +485,6 @@ export class ProductDetailsService {
       }),
       shareReplay(1),
     );
-
     this.productDetailsCache.set(cacheKey, request$);
     return request$;
   }

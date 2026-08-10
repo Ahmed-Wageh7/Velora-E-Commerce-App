@@ -46,10 +46,9 @@ export class ProductDetailsPageComponent {
 
   private readonly productState$ = this.route.paramMap.pipe(
     switchMap((params) => {
-      const folder = params.get("folder");
       const id = params.get("id");
 
-      if (!folder || !id) {
+      if (!id) {
         return of({
           status: "empty",
           data: null,
@@ -57,7 +56,7 @@ export class ProductDetailsPageComponent {
         } satisfies RequestState<ProductDetails | null>);
       }
 
-      return this.productDetailsService.getProductDetails(folder, id).pipe(
+      return this.productDetailsService.getProductDetails(id).pipe(
         map(
           (product) =>
             ({
@@ -68,15 +67,13 @@ export class ProductDetailsPageComponent {
                 : "The product you requested could not be found.",
             }) satisfies RequestState<ProductDetails | null>,
         ),
-        catchError((error) => {
-          console.error("PRODUCT DETAILS ERROR:", error);
-
-          return of({
+        catchError(() =>
+          of({
             status: "error",
             data: null,
             message: "We could not load this product right now.",
-          } satisfies RequestState<ProductDetails | null>);
-        }),
+          } satisfies RequestState<ProductDetails | null>),
+        ),
       );
     }),
 
@@ -86,6 +83,7 @@ export class ProductDetailsPageComponent {
       message: "Loading product...",
     } satisfies RequestState<ProductDetails | null>),
   );
+
   protected readonly productState = toSignal(this.productState$, {
     requireSync: true,
   });

@@ -1,32 +1,49 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, ViewChild, computed, inject, input } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
-import { CartAnimationService } from '../../../../core/services/cart-animation.service';
-import { CartService } from '../../../../core/services/cart.service';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  PLATFORM_ID,
+  ViewChild,
+  computed,
+  inject,
+  input,
+} from "@angular/core";
+import { isPlatformBrowser } from "@angular/common";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { RouterLink } from "@angular/router";
+import { switchMap } from "rxjs";
+import { CartAnimationService } from "../../../../core/services/cart-animation.service";
+import { CartService } from "../../../../core/services/cart.service";
 import {
   CollectionProduct,
   CollectionProductsService,
-} from '../../../../core/services/collection-products.service';
-import { ToastService } from '../../../../core/services/toast.service';
-import { toRequestState } from '../../../../core/utils/request-state';
+} from "../../../../core/services/collection-products.service";
+import { ToastService } from "../../../../core/services/toast.service";
+import { toRequestState } from "../../../../core/utils/request-state";
 
 @Component({
-  selector: 'app-home-collection-carousel-section',
+  selector: "app-home-collection-carousel-section",
   imports: [RouterLink],
-  templateUrl: './home-collection-carousel-section.html',
-  styleUrl: './home-collection-carousel-section.scss',
+  templateUrl: "./home-collection-carousel-section.html",
+  styleUrl: "./home-collection-carousel-section.scss",
 })
-export class HomeCollectionCarouselSectionComponent implements AfterViewInit, OnDestroy {
+export class HomeCollectionCarouselSectionComponent
+  implements AfterViewInit, OnDestroy
+{
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly collectionProductsService = inject(
+    CollectionProductsService,
+  );
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
   private readonly loadingProductIds = new Set<string>();
   private autoScrollIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  @ViewChild('viewport') private viewportRef?: ElementRef<HTMLElement>;
+  @ViewChild("viewport") private viewportRef?: ElementRef<HTMLElement>;
 
   readonly bannerImage = input.required<string>();
   readonly bannerAlt = input.required<string>();
@@ -40,31 +57,40 @@ export class HomeCollectionCarouselSectionComponent implements AfterViewInit, On
   protected readonly productsState = toSignal(
     toObservable(computed(() => this.subcategoryId())).pipe(
       switchMap((subcategoryId) =>
-        toRequestState(this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, true, { includeDeleted: true }), {
-          initialData: [] as CollectionProduct[],
-          loadingMessage: 'Loading products...',
-          emptyMessage: 'No products are available right now.',
-          errorMessage: 'We could not load this collection right now.',
-        }),
+        toRequestState(
+          this.collectionProductsService.getProductsBySubcategoryId(
+            subcategoryId,
+            true,
+            { includeDeleted: true },
+          ),
+          {
+            initialData: [] as CollectionProduct[],
+            loadingMessage: "Loading products...",
+            emptyMessage: "No products are available right now.",
+            errorMessage: "We could not load this collection right now.",
+          },
+        ),
       ),
     ),
     {
       initialValue: {
-        status: 'loading' as const,
+        status: "loading" as const,
         data: [] as CollectionProduct[],
-        message: 'Loading products...',
+        message: "Loading products...",
       },
     },
   );
 
   ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.startAutoScroll();
   }
 
   ngOnDestroy(): void {
-    if (this.autoScrollIntervalId) {
-      clearInterval(this.autoScrollIntervalId);
-    }
+    this.pauseAutoScroll();
   }
 
   protected trackById(_: number, product: CollectionProduct): string {
@@ -76,7 +102,7 @@ export class HomeCollectionCarouselSectionComponent implements AfterViewInit, On
   }
 
   protected getButtonLabel(product: CollectionProduct): string {
-    return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
+    return product.quantity > 0 ? "Add to cart" : "Out of stock";
   }
 
   protected isAddingToCart(productId: string): boolean {
@@ -91,12 +117,19 @@ export class HomeCollectionCarouselSectionComponent implements AfterViewInit, On
   }
 
   protected resumeAutoScroll(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (!this.autoScrollIntervalId) {
       this.startAutoScroll();
     }
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(
+    product: CollectionProduct,
+    event: MouseEvent,
+  ): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }
@@ -121,7 +154,10 @@ export class HomeCollectionCarouselSectionComponent implements AfterViewInit, On
 
       await Promise.all([
         this.waitForButtonFeedback(),
-        this.cartAnimationService.animateFromTrigger(trigger, product.primaryImageUrl),
+        this.cartAnimationService.animateFromTrigger(
+          trigger,
+          product.primaryImageUrl,
+        ),
       ]);
 
       this.toastService.showAddedToCart({
@@ -137,11 +173,17 @@ export class HomeCollectionCarouselSectionComponent implements AfterViewInit, On
   }
 
   private startAutoScroll(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.pauseAutoScroll();
 
     this.autoScrollIntervalId = setInterval(() => {
       const viewport = this.viewportRef?.nativeElement;
-      const firstCard = viewport?.querySelector('.home-collection-card') as HTMLElement | null;
+      const firstCard = viewport?.querySelector(
+        ".home-collection-card",
+      ) as HTMLElement | null;
 
       if (!viewport || !firstCard) {
         return;
@@ -158,11 +200,17 @@ export class HomeCollectionCarouselSectionComponent implements AfterViewInit, On
       const nextScrollLeft = viewport.scrollLeft + cardWidth + gap;
 
       if (nextScrollLeft >= maxScrollLeft - 8) {
-        viewport.scrollTo({ left: 0, behavior: 'smooth' });
+        viewport.scrollTo({
+          left: 0,
+          behavior: "smooth",
+        });
         return;
       }
 
-      viewport.scrollTo({ left: nextScrollLeft, behavior: 'smooth' });
+      viewport.scrollTo({
+        left: nextScrollLeft,
+        behavior: "smooth",
+      });
     }, 6000);
   }
 

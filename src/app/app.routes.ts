@@ -9,11 +9,13 @@ export const routes: Routes = [
     title: "Veloura | Own Your Elegance",
   },
   {
-    path: "product/:folder/:id",
+    path: "product/:id",
+
     loadComponent: () =>
       import("./features/catalog/pages/product-details/product-details").then(
         (module) => module.ProductDetailsPageComponent,
       ),
+
     title: "Product Details | Veloura",
   },
   {
