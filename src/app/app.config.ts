@@ -15,16 +15,18 @@ import { refreshTokenInterceptor } from "./core/interceptors/refresh-token-inter
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+
     provideRouter(
       routes,
       withInMemoryScrolling({
         scrollPositionRestoration: "top",
       }),
     ),
+
     provideClientHydration(withEventReplay()),
+
     provideHttpClient(
       withInterceptors([accessTokenInterceptor, refreshTokenInterceptor]),
     ),
-    provideClientHydration(),
   ],
 };
