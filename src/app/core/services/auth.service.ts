@@ -164,6 +164,13 @@ export class AuthService {
       map(({ accessToken }) => accessToken),
     );
   }
+  async waitForInitialization(): Promise<void> {
+    if (!this.authInitializingState()) {
+      return;
+    }
+
+    await this.restoreSession();
+  }
 
   restoreSession(): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId)) {

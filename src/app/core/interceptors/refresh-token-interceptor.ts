@@ -83,10 +83,10 @@ function addAuthorizationHeader(
 
 function isRefreshRequest(req: HttpRequest<unknown>): boolean {
   return [
-    "/users/login",
-    "/users/signup",
-    "/users/register",
-    "/users/refresh",
-    "/users/logout",
+    "/auth/login",
+    "/auth/signup",
+    "/auth/register",
+    "/auth/refresh",
+    "/auth/logout",
   ].some((path) => req.url.includes(path));
 }

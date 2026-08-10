@@ -22,10 +22,10 @@ export const accessTokenInterceptor: HttpInterceptorFn = (req, next) => {
 
 function isAuthRequest(req: { url: string }): boolean {
   return [
-    "/users/login",
-    "/users/signup",
-    "/users/register",
-    "/users/refresh",
-    "/users/logout",
+    "/auth/login",
+    "/auth/signup",
+    "/auth/register",
+    "/auth/refresh",
+    "/auth/logout",
   ].some((path) => req.url.includes(path));
 }

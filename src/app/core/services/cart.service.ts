@@ -61,6 +61,8 @@ export class CartService {
   }
 
   async loadCart(): Promise<boolean> {
+    await this.authService.waitForInitialization();
+
     if (!this.authService.isAuthenticated()) {
       return false;
     }
@@ -100,6 +102,8 @@ export class CartService {
     return result;
   }
   async addToCart(product: Product, quantity = 1): Promise<boolean> {
+    await this.authService.waitForInitialization();
+
     if (!this.requireAuth("Sign in to add products to your cart.")) {
       return false;
     }
