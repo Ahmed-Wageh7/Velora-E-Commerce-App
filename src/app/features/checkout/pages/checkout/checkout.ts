@@ -420,9 +420,8 @@ export class CheckoutPageComponent implements OnDestroy {
   private async resolveProductRoute(
     item: CartItem,
   ): Promise<(number | string)[]> {
-    const productId = await this.resolveProductId(item);
+    const productId = item.productId || item.detailProductId || item.id;
     const folder = item.detailFolder?.trim();
-
     return folder ? ["/product", folder, productId] : ["/product", productId];
   }
 
