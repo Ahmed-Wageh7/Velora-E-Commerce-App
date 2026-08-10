@@ -36,7 +36,7 @@ export class AuthApiService {
   login(email: string, password: string): Observable<AuthApiResponse> {
     return this.http
       .post<AuthApiResponse>(
-        `${this.apiBaseUrl}/users/login`,
+        `${this.apiBaseUrl}/auth/login`,
         {
           email: email.trim().toLowerCase(),
           password,
@@ -52,7 +52,7 @@ export class AuthApiService {
 
     return this.http
       .post<AuthApiResponse>(
-        `${this.apiBaseUrl}/users/signup`,
+        `${this.apiBaseUrl}/auth/signup`,
         {
           name,
           email: normalizedEmail,
@@ -65,14 +65,14 @@ export class AuthApiService {
 
   logout(): Observable<unknown> {
     return this.http
-      .post(`${this.apiBaseUrl}/users/logout`, {}, { withCredentials: true })
+      .post(`${this.apiBaseUrl}/auth/logout`, {}, { withCredentials: true })
       .pipe(timeout(10000));
   }
 
   refresh(): Observable<AuthApiResponse> {
     return this.http
       .post<AuthApiResponse>(
-        `${this.apiBaseUrl}/users/refresh`,
+        `${this.apiBaseUrl}/auth/refresh`,
         {},
         { withCredentials: true },
       )
