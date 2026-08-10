@@ -1,9 +1,16 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { routes } from './app.routes';
-import { authInterceptor } from './core/interceptors/auth.interceptor';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+} from "@angular/core";
+import { provideRouter, withInMemoryScrolling } from "@angular/router";
+import {
+  provideClientHydration,
+  withEventReplay,
+} from "@angular/platform-browser";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { routes } from "./app.routes";
+import { accessTokenInterceptor } from "./core/interceptors/access-token-interceptor";
+import { refreshTokenInterceptor } from "./core/interceptors/refresh-token-interceptor";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -11,10 +18,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withInMemoryScrolling({
-        scrollPositionRestoration: 'top',
+        scrollPositionRestoration: "top",
       }),
     ),
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(
+      withInterceptors([accessTokenInterceptor, refreshTokenInterceptor]),
+    ),
   ],
 };
