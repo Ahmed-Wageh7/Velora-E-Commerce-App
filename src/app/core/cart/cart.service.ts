@@ -8,10 +8,10 @@ import {
   signal,
 } from "@angular/core";
 import { Router } from "@angular/router";
-import { AuthService } from "./auth.service";
+import { AuthService } from "../auth/auth.service";
 import { CartApiItem, CartApiService } from "./cart-api.service";
-import { Product } from "./products.service";
-import { ToastService } from "./toast.service";
+import { Product } from "../api/products.service";
+import { ToastService } from "../notifications/toast.service";
 
 export interface CartItem {
   id: string;

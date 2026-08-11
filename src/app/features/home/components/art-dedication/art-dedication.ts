@@ -1,10 +1,10 @@
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { CartAnimationService } from '../../../../core/services/cart-animation.service';
-import { CartService } from '../../../../core/services/cart.service';
-import { ArtDedicationProduct, ArtDedicationService } from '../../../../core/services/art-dedication.service';
-import { ToastService } from '../../../../core/services/toast.service';
+import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
+import { CartService } from '../../../../core/cart/cart.service';
+import { ArtDedicationProduct, ArtDedicationService } from '../../../../core/api/art-dedication.service';
+import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
 
 @Component({

@@ -14,16 +14,16 @@ import {
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router, RouterLink } from "@angular/router";
 import { firstValueFrom, filter } from "rxjs";
-import { AuthService } from "../../../core/services/auth.service";
-import { ArtDedicationService } from "../../../core/services/art-dedication.service";
-import { CartService } from "../../../core/services/cart.service";
-import { CollectionProductsService } from "../../../core/services/collection-products.service";
-import { CareProductsService } from "../../../core/services/care-products.service";
-import { FragrancesService } from "../../../core/services/fragrances.service";
-import { PromiseHomeProductsService } from "../../../core/services/promise-home-products.service";
-import { TaxonomyService } from "../../../core/services/taxonomy.service";
-import { NAV_LOCAL_COLLECTIONS } from "../../../core/data/nav-route-aliases";
-import { CollectionQuery } from "../../../core/services/product-api.utils";
+import { AuthService } from "../../core/auth/auth.service";
+import { ArtDedicationService } from "../../core/api/art-dedication.service";
+import { CartService } from "../../core/cart/cart.service";
+import { CollectionProductsService } from "../../core/api/collection-products.service";
+import { CareProductsService } from "../../core/api/care-products.service";
+import { FragrancesService } from "../../core/api/fragrances.service";
+import { PromiseHomeProductsService } from "../../core/api/promise-home-products.service";
+import { TaxonomyService } from "../../core/api/taxonomy.service";
+import { NAV_LOCAL_COLLECTIONS } from "../../features/collections/data/nav-route-aliases";
+import { CollectionQuery } from "../../core/api/product-api.utils";
 
 @Component({
   selector: "app-site-navbar",

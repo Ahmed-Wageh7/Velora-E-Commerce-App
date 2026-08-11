@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Product } from '../../../../core/services/products.service';
+import { Product } from '../../../../core/api/products.service';
 
 @Component({
   selector: 'app-product-card',

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
-import { SiteNavbar } from '../../../../shared/components/site-navbar/site-navbar';
+import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 
 @Component({
   selector: 'app-hero',

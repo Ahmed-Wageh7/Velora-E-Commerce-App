@@ -3,12 +3,12 @@ import { Title } from '@angular/platform-browser';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { delay, map, of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CartAnimationService } from '../../../../core/services/cart-animation.service';
-import { CartService } from '../../../../core/services/cart.service';
-import { CollectionProduct, CollectionProductsService } from '../../../../core/services/collection-products.service';
-import { ToastService } from '../../../../core/services/toast.service';
-import { SiteNavbar } from '../../../../shared/components/site-navbar/site-navbar';
-import { NAV_LOCAL_COLLECTIONS } from '../../../../core/data/nav-route-aliases';
+import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
+import { CartService } from '../../../../core/cart/cart.service';
+import { CollectionProduct, CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ToastService } from '../../../../core/notifications/toast.service';
+import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
+import { NAV_LOCAL_COLLECTIONS } from '../../../../features/collections/data/nav-route-aliases';
 import { RequestState, toRequestState } from '../../../../core/utils/request-state';
 
 @Component({

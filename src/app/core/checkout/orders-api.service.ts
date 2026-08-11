@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, timeout } from 'rxjs';
-import { getApiBaseUrl } from './product-api.utils';
+import { getApiBaseUrl } from '../api/product-api.utils';
 
 export interface OrderShippingAddress {
   street: string;

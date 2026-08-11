@@ -14,13 +14,13 @@ import { isPlatformBrowser } from "@angular/common";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { RouterLink } from "@angular/router";
 import { switchMap } from "rxjs";
-import { CartAnimationService } from "../../../../core/services/cart-animation.service";
-import { CartService } from "../../../../core/services/cart.service";
+import { CartAnimationService } from "../../../../core/cart/cart-animation.service";
+import { CartService } from "../../../../core/cart/cart.service";
 import {
   CollectionProduct,
   CollectionProductsService,
-} from "../../../../core/services/collection-products.service";
-import { ToastService } from "../../../../core/services/toast.service";
+} from "../../../../core/api/collection-products.service";
+import { ToastService } from "../../../../core/notifications/toast.service";
 import { toRequestState } from "../../../../core/utils/request-state";
 
 @Component({

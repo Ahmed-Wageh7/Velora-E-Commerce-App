@@ -1,4 +1,4 @@
-import { CollectionProductSeed } from '../services/collection-products.service';
+import { CollectionProductSeed } from '../../../core/api/collection-products.service';
 
 export interface LocalCollectionPageConfig {
   title: string;

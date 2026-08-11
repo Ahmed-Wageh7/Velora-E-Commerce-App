@@ -3,12 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth/auth.service';
 import { CartApiItem, CartApiService } from './cart-api.service';
 import { CartService } from './cart.service';
-import { CollectionProductsService } from './collection-products.service';
-import { ProductsService, type Product } from './products.service';
-import { ToastService } from './toast.service';
+import { CollectionProductsService } from '../api/collection-products.service';
+import { ProductsService, type Product } from '../api/products.service';
+import { ToastService } from '../notifications/toast.service';
 
 describe('CartService', () => {
   const storageKey = 'veloura-cart-items';

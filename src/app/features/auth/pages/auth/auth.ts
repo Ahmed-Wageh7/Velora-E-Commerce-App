@@ -2,9 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../../core/services/auth.service';
-import { ToastService } from '../../../../core/services/toast.service';
-import { SiteNavbar } from '../../../../shared/components/site-navbar/site-navbar';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { ToastService } from '../../../../core/notifications/toast.service';
+import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 
 @Component({
   selector: 'app-auth-page',

@@ -13,14 +13,14 @@ import { ActivatedRoute, RouterLink } from "@angular/router";
 import { Title } from "@angular/platform-browser";
 import { catchError, map, of, startWith, switchMap } from "rxjs";
 
-import { CartAnimationService } from "../../../../core/services/cart-animation.service";
-import { CartService } from "../../../../core/services/cart.service";
+import { CartAnimationService } from "../../../../core/cart/cart-animation.service";
+import { CartService } from "../../../../core/cart/cart.service";
 import {
   ProductDetails,
   ProductDetailsService,
-} from "../../../../core/services/product-details.service";
-import { ToastService } from "../../../../core/services/toast.service";
-import { SiteNavbar } from "../../../../shared/components/site-navbar/site-navbar";
+} from "../../../../core/api/product-details.service";
+import { ToastService } from "../../../../core/notifications/toast.service";
+import { SiteNavbar } from "../../../../layout/site-navbar/site-navbar";
 import { RequestState } from "../../../../core/utils/request-state";
 
 @Component({

@@ -5,7 +5,7 @@ import {
   ApiProductRecord,
   getApiBaseUrl,
   getPrimaryImageUrl,
-} from "./product-api.utils";
+} from "../api/product-api.utils";
 
 interface CartResponse {
   cart: {

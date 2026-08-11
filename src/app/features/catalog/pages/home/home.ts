@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { ProductCardComponent } from '../../components/product-card/product-card';
-import { ProductsService } from '../../../../core/services/products.service';
+import { ProductsService } from '../../../../core/api/products.service';
 
 @Component({
   selector: 'app-home-page',

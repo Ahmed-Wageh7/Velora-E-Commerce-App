@@ -18,7 +18,7 @@ import {
   tap,
 } from "rxjs";
 import { AuthApiResponse, AuthApiService } from "./auth-api.service";
-import { ToastService } from "./toast.service";
+import { ToastService } from "../notifications/toast.service";
 
 interface AuthApiUser {
   _id?: string;

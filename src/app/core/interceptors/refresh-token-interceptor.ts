@@ -15,7 +15,7 @@ import {
   take,
   throwError,
 } from "rxjs";
-import { AuthService } from "../services/auth.service";
+import { AuthService } from "../auth/auth.service";
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);

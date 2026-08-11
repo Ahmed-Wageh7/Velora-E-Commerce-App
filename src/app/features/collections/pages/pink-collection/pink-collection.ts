@@ -1,11 +1,11 @@
 import { AsyncPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CartAnimationService } from '../../../../core/services/cart-animation.service';
-import { CartService } from '../../../../core/services/cart.service';
-import { CollectionProduct, CollectionProductsService } from '../../../../core/services/collection-products.service';
-import { ToastService } from '../../../../core/services/toast.service';
-import { SiteNavbar } from '../../../../shared/components/site-navbar/site-navbar';
+import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
+import { CartService } from '../../../../core/cart/cart.service';
+import { CollectionProduct, CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ToastService } from '../../../../core/notifications/toast.service';
+import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 
 @Component({
   selector: 'app-pink-collection-page',
