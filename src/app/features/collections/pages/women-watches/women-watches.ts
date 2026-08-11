@@ -12,8 +12,6 @@ import { WatchCollectionPageComponent } from "../../components/watch-collection-
       descriptionLabel="women watch"
       heroImageFile="/collections/heroes/women-watches.webp"
       [fullWidthHero]="true"
-      categoryName="Assaf Watches"
-      subcategoryName="women's watches"
       subcategoryId="69d4fe2a9e39253830600a72"
       [includeDeletedProducts]="true"
       [fetchAllPages]="true"

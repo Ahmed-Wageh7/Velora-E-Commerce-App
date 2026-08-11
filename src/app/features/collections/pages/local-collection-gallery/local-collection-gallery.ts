@@ -1,17 +1,18 @@
 import { ChangeDetectorRef, Component, computed, effect, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { delay, map, of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
+import { TaxonomyService } from '../../../../core/api/taxonomy.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 import { NAV_LOCAL_COLLECTIONS } from '../../../../features/collections/data/nav-route-aliases';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { RequestState } from '../../../../models/common/request-state.model';
-import { CollectionProduct } from '../../../../models/product/collection-product.model';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 
 @Component({
   selector: 'app-local-collection-gallery-page',
@@ -23,7 +24,8 @@ export class LocalCollectionGalleryPageComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
+  private readonly taxonomyService = inject(TaxonomyService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
@@ -33,6 +35,15 @@ export class LocalCollectionGalleryPageComponent {
     this.route.paramMap.pipe(map((params) => params.get('slug') ?? '')),
     { initialValue: this.route.snapshot.paramMap.get('slug') ?? '' },
   );
+  private readonly routeSubcategoryId = toSignal(
+    this.route.paramMap.pipe(map((params) => params.get('subcategoryId') ?? '')),
+    { initialValue: this.route.snapshot.paramMap.get('subcategoryId') ?? '' },
+  );
+  private readonly routeCategoryId = toSignal(
+    this.route.paramMap.pipe(map((params) => params.get('categoryId') ?? '')),
+    { initialValue: this.route.snapshot.paramMap.get('categoryId') ?? '' },
+  );
+
   protected readonly sortOptions = ['Our Suggestions', 'Newest', 'Price: Low to High', 'Price: High to Low'];
   protected readonly collection = computed(() => NAV_LOCAL_COLLECTIONS[this.slug()] ?? null);
   protected readonly selectedSort = signal(this.sortOptions[0]);
@@ -41,45 +52,72 @@ export class LocalCollectionGalleryPageComponent {
   protected readonly heroImageUrl = computed(() => this.collection()?.heroImageFile ?? null);
   private readonly productsState = toSignal(
     this.route.paramMap.pipe(
-      map((params) => params.get('slug') ?? ''),
-      switchMap((slug) => {
+      switchMap((params) => {
+        const slug = params.get('slug') ?? '';
+        const subcategoryId = params.get('subcategoryId') ?? '';
+        const categoryId = params.get('categoryId') ?? '';
         const currentCollection = NAV_LOCAL_COLLECTIONS[slug];
 
-        if (!currentCollection) {
-          return of({
-            status: 'error',
-            data: [] as CollectionProduct[],
-            message: 'This collection does not exist.',
-          } satisfies RequestState<CollectionProduct[]>);
+        if (categoryId) {
+          return toRequestState(
+            this.productListingService.getProductsByCategory(categoryId, {
+              includeDeleted: true,
+              fetchAllPages: true,
+            }),
+            {
+              initialData: [] as ProductListItem[],
+              loadingMessage: 'Loading products...',
+              emptyMessage: 'No products are available in this category yet.',
+              errorMessage: 'We could not load this category right now.',
+            },
+          );
         }
 
-        return toRequestState(
-          this.collectionProductsService.getCollectionProductsWithOptions(currentCollection.folder, {
-            includeDeleted: currentCollection.includeDeletedProducts ?? true,
-            fetchAllPages: currentCollection.fetchAllPages ?? true,
-          }).pipe(delay(currentCollection.minimumLoadingMs ?? 0)),
-          {
-            initialData: [] as CollectionProduct[],
-            loadingMessage: 'Loading products...',
-            emptyMessage: 'No products are available in this collection yet.',
-            errorMessage: 'We could not load this collection right now.',
-          },
+        const metadata$ = subcategoryId
+          ? this.taxonomyService.findSubcategoryById(subcategoryId)
+          : this.taxonomyService.findSubcategoryBySlug(currentCollection?.folder ?? slug);
+
+        return metadata$.pipe(
+          switchMap((metadata) => {
+            const resolvedSubcategoryId = metadata?.subcategory._id ?? metadata?.subcategory.id ?? '';
+
+            if (!resolvedSubcategoryId) {
+              return of({
+                status: 'error',
+                data: [] as ProductListItem[],
+                message: 'This collection does not exist.',
+              } satisfies RequestState<ProductListItem[]>);
+            }
+
+            return toRequestState(
+              this.productListingService.getProductsBySubcategory(resolvedSubcategoryId, {
+                includeDeleted: currentCollection?.includeDeletedProducts ?? true,
+                fetchAllPages: currentCollection?.fetchAllPages ?? true,
+              }).pipe(delay(currentCollection?.minimumLoadingMs ?? 0)),
+              {
+                initialData: [] as ProductListItem[],
+                loadingMessage: 'Loading products...',
+                emptyMessage: 'No products are available in this collection yet.',
+                errorMessage: 'We could not load this collection right now.',
+              },
+            );
+          }),
         );
       }),
     ),
     {
       initialValue: {
         status: 'loading',
-        data: [] as CollectionProduct[],
+        data: [] as ProductListItem[],
         message: 'Loading products...',
-      } satisfies RequestState<CollectionProduct[]>,
+      } satisfies RequestState<ProductListItem[]>,
     },
   );
   protected readonly collectionState = computed(() => {
-    if (!this.collection()) {
+    if (!this.collection() && !this.routeSubcategoryId() && !this.routeCategoryId()) {
       return {
         status: 'notfound' as const,
-        data: [] as CollectionProduct[],
+        data: [] as ProductListItem[],
         message: 'This collection could not be found.',
       };
     }
@@ -143,11 +181,11 @@ export class LocalCollectionGalleryPageComponent {
     this.visibleCount.set(this.pageSize);
   }
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return String(product.id);
   }
 
-  protected getButtonLabel(product: CollectionProduct): string {
+  protected getButtonLabel(product: ProductListItem): string {
     return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
   }
 
@@ -165,7 +203,7 @@ export class LocalCollectionGalleryPageComponent {
       : '/collections/feature-heads/feature-head-2.jpg';
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }
@@ -204,7 +242,7 @@ export class LocalCollectionGalleryPageComponent {
     }
   }
 
-  private getSortedProducts(products: CollectionProduct[]): CollectionProduct[] {
+  private getSortedProducts(products: ProductListItem[]): ProductListItem[] {
     const sortedProducts = [...products];
 
     switch (this.selectedSort()) {

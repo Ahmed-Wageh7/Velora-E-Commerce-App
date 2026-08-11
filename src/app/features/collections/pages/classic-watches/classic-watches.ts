@@ -10,8 +10,6 @@ import { WatchCollectionPageComponent } from '../../components/watch-collection-
       breadcrumbLabel="Classic Watches"
       collectionFolder="classic-watches"
       descriptionLabel="classic watch"
-      categoryName="Assaf Watches"
-      subcategoryName="classic watches"
       subcategoryId="69d4fe2a9e39253830600a71"
       [includeDeletedProducts]="true"
       [fetchAllPages]="true"

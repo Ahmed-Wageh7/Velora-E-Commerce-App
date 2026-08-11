@@ -2,9 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
 import { toRequestState } from '../../../../core/utils/request-state';
-import { CollectionProduct } from '../../../../models/product/collection-product.model';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 
 @Component({
   selector: 'app-top-releases',
@@ -15,7 +15,7 @@ import { CollectionProduct } from '../../../../models/product/collection-product
 })
 export class TopReleasesComponent {
   private readonly router = inject(Router);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
   private readonly subcategoryId = '69d4fe2b9e39253830600a74';
   protected activeTargetId: string | null = null;
   protected readonly detailsFolder = 'top-release';
@@ -32,11 +32,12 @@ export class TopReleasesComponent {
 
   protected readonly topReleasesState = toSignal(
     toRequestState(
-      this.collectionProductsService.getProductsBySubcategoryId(this.subcategoryId, true, {
+      this.productListingService.getProductsBySubcategory(this.subcategoryId, {
+        fetchAllPages: true,
         includeDeleted: true,
       }),
       {
-        initialData: [] as CollectionProduct[],
+        initialData: [] as ProductListItem[],
         loadingMessage: 'Loading top releases...',
         emptyMessage: 'No top releases are available right now.',
         errorMessage: 'We could not load top releases right now.',
@@ -45,7 +46,7 @@ export class TopReleasesComponent {
     {
       initialValue: {
         status: 'loading',
-        data: [] as CollectionProduct[],
+        data: [] as ProductListItem[],
         message: 'Loading top releases...',
       },
     },
@@ -62,11 +63,11 @@ export class TopReleasesComponent {
     });
   }
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return String(product.id);
   }
 
-  protected async openProduct(product: CollectionProduct, index: number): Promise<void> {
+  protected async openProduct(product: ProductListItem, index: number): Promise<void> {
     const targetRoute = this.cardRoutes[index];
     this.activeTargetId = targetRoute ?? product.id;
 
@@ -82,7 +83,7 @@ export class TopReleasesComponent {
     }
   }
 
-  protected isOpeningProduct(product: CollectionProduct, index: number): boolean {
+  protected isOpeningProduct(product: ProductListItem, index: number): boolean {
     return this.activeTargetId === (this.cardRoutes[index] ?? product.id);
   }
 }

@@ -10,6 +10,14 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server,
   },
   {
+    path: "collections/:subcategoryId/:slug",
+    renderMode: RenderMode.Server,
+  },
+  {
+    path: "category/:categoryId/:slug",
+    renderMode: RenderMode.Server,
+  },
+  {
     path: "**",
     renderMode: RenderMode.Prerender,
   },

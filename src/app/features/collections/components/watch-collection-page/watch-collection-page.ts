@@ -2,15 +2,11 @@ import { AsyncPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, computed, inject, input } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { delay, switchMap } from 'rxjs';
+import { delay, of, switchMap } from 'rxjs';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
-import {
-  CollectionProduct,
-  CollectionProductOptions,
-  CollectionQuery,
-} from '../../../../models/product/collection-product.model';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 
@@ -22,7 +18,7 @@ import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 })
 export class WatchCollectionPageComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
@@ -35,8 +31,6 @@ export class WatchCollectionPageComponent {
   readonly descriptionLabel = input.required<string>();
   readonly heroImageFile = input<string | null>(null);
   readonly fullWidthHero = input(false);
-  readonly categoryName = input<string | null>(null);
-  readonly subcategoryName = input<string | null>(null);
   readonly subcategoryId = input<string | null>(null);
   readonly includeDeletedProducts = input(false);
   readonly fetchAllPages = input(false);
@@ -58,43 +52,28 @@ export class WatchCollectionPageComponent {
   });
   protected readonly watchProducts$ = toObservable(
     computed(() => ({
-      folder: this.collectionFolder(),
-      categoryName: this.categoryName(),
-      subcategoryName: this.subcategoryName(),
       subcategoryId: this.subcategoryId(),
       includeDeletedProducts: this.includeDeletedProducts(),
       fetchAllPages: this.fetchAllPages(),
       minimumLoadingMs: this.minimumLoadingMs(),
     })),
   ).pipe(
-    switchMap(({ folder, categoryName, subcategoryName, subcategoryId, includeDeletedProducts, fetchAllPages, minimumLoadingMs }) => {
-      const options: CollectionProductOptions = {
-        includeDeleted: includeDeletedProducts,
-        fetchAllPages,
-      };
-
-      const query = categoryName
-        ? ({
-            categoryName,
-            subcategoryName: subcategoryName ?? undefined,
-          } satisfies CollectionQuery)
-        : undefined;
-
-      return (
-        subcategoryId
-          ? this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, fetchAllPages, options)
-          : query
-            ? this.collectionProductsService.getProductsByQuery(query, options)
-            : this.collectionProductsService.getCollectionProductsWithOptions(folder, options)
-      ).pipe(delay(minimumLoadingMs));
-    }),
+    switchMap(({ subcategoryId, includeDeletedProducts, fetchAllPages, minimumLoadingMs }) =>
+      (subcategoryId
+        ? this.productListingService.getProductsBySubcategory(subcategoryId, {
+            includeDeleted: includeDeletedProducts,
+            fetchAllPages,
+          })
+        : of([] as ProductListItem[])
+      ).pipe(delay(minimumLoadingMs)),
+    ),
   );
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return String(product.id);
   }
 
-  protected getButtonLabel(product: CollectionProduct): string {
+  protected getButtonLabel(product: ProductListItem): string {
     return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
   }
 
@@ -106,11 +85,11 @@ export class WatchCollectionPageComponent {
     return `${price} ﷼`;
   }
 
-  protected getVisibleProducts(products: CollectionProduct[]): CollectionProduct[] {
+  protected getVisibleProducts(products: ProductListItem[]): ProductListItem[] {
     return this.getSortedProducts(products).slice(0, this.visibleCount);
   }
 
-  protected canShowMore(products: CollectionProduct[]): boolean {
+  protected canShowMore(products: ProductListItem[]): boolean {
     return this.visibleCount < this.getSortedProducts(products).length;
   }
 
@@ -134,7 +113,7 @@ export class WatchCollectionPageComponent {
     this.visibleCount = this.pageSize;
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }
@@ -173,7 +152,7 @@ export class WatchCollectionPageComponent {
     }
   }
 
-  private getSortedProducts(products: CollectionProduct[]): CollectionProduct[] {
+  private getSortedProducts(products: ProductListItem[]): ProductListItem[] {
     const sortedProducts = [...products];
 
     switch (this.selectedSort) {

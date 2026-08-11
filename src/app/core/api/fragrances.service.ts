@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, map, of, shareReplay, switchMap } from 'rxjs';
 import { getProductId, getProductOriginalPrice, getProductQuantity, getPrimaryImageUrl } from './product-api.utils';
 import { ProductCollectionsService } from './product-collections.service';
+import { TaxonomyService } from './taxonomy.service';
 import { FragranceApiRecord, FragranceProduct } from '../../models/product/home-product.model';
 
 @Injectable({
@@ -9,8 +10,18 @@ import { FragranceApiRecord, FragranceProduct } from '../../models/product/home-
 })
 export class FragrancesService {
   private readonly productCollectionsService = inject(ProductCollectionsService);
-  private readonly fragrances$ = this.productCollectionsService
-    .getProductsByQuery({ categoryName: 'Perfumes' })
+  private readonly taxonomyService = inject(TaxonomyService);
+  private readonly fragrances$ = this.taxonomyService
+    .findCategoryBySlug('perfumes')
+    .pipe(
+      switchMap((category) => {
+        const categoryId = category?._id ?? category?.id ?? '';
+
+        return categoryId
+          ? this.productCollectionsService.getProductsByCategoryId(categoryId)
+          : of([]);
+      }),
+    )
     .pipe(
       map((products) => products.map((product) => this.toFragranceProduct(product))),
       shareReplay(1),

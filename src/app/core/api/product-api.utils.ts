@@ -44,16 +44,6 @@ export function buildProductsBySubcategoryUrl(
   return `${apiBaseUrl}/products/subcategory/${subcategoryId}?page=${page}&limit=${limit}`;
 }
 
-export function normalizeLabel(value: string | null | undefined): string {
-  return String(value ?? "")
-    .toLowerCase()
-    .trim()
-    .replace(/['’]/g, "")
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export function buildMediaUrl(value: ApiImageValue): string {
   const rawValue = getRawImageValue(value);
 
@@ -119,30 +109,6 @@ export function getGalleryImageUrls(product: ApiProductRecord): string[] {
   ].filter(Boolean);
 
   return Array.from(new Set(urls));
-}
-
-export function getCategoryIdByName(
-  categories: TaxonomyApiCategory[],
-  categoryName: string,
-): string | null {
-  const category = categories.find(
-    (item) => normalizeLabel(item.name) === normalizeLabel(categoryName),
-  );
-  return category?._id ?? category?.id ?? null;
-}
-
-export function getSubcategoryIdByName(
-  categories: TaxonomyApiCategory[],
-  categoryName: string,
-  subcategoryName: string,
-): string | null {
-  const category = categories.find(
-    (item) => normalizeLabel(item.name) === normalizeLabel(categoryName),
-  );
-  const subcategory = category?.subcategories?.find(
-    (item) => normalizeLabel(item.name) === normalizeLabel(subcategoryName),
-  );
-  return subcategory?._id ?? subcategory?.id ?? null;
 }
 
 export function extractApiData<T>(response: ApiResponseEnvelope<T> | T): T {

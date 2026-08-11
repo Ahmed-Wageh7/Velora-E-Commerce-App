@@ -3,10 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
-import { CollectionProduct } from '../../../../models/product/collection-product.model';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 
 @Component({
   selector: 'app-frankel-collection-section',
@@ -16,7 +16,7 @@ import { CollectionProduct } from '../../../../models/product/collection-product
 })
 export class FrankelCollectionSectionComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
@@ -26,11 +26,12 @@ export class FrankelCollectionSectionComponent {
 
   protected readonly productsState = toSignal(
     toRequestState(
-      this.collectionProductsService.getProductsBySubcategoryId(this.subcategoryId, true, {
+      this.productListingService.getProductsBySubcategory(this.subcategoryId, {
+        fetchAllPages: true,
         includeDeleted: true,
       }),
       {
-        initialData: [] as CollectionProduct[],
+        initialData: [] as ProductListItem[],
         loadingMessage: 'Loading Frankel collection...',
         emptyMessage: 'No Frankel products are available right now.',
         errorMessage: 'We could not load the Frankel collection right now.',
@@ -39,17 +40,17 @@ export class FrankelCollectionSectionComponent {
     {
       initialValue: {
         status: 'loading',
-        data: [] as CollectionProduct[],
+        data: [] as ProductListItem[],
         message: 'Loading Frankel collection...',
       },
     },
   );
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return `${product.id}`;
   }
 
-  protected getVisibleProducts(products: CollectionProduct[]): CollectionProduct[] {
+  protected getVisibleProducts(products: ProductListItem[]): ProductListItem[] {
     return products.slice(0, 6);
   }
 
@@ -57,7 +58,7 @@ export class FrankelCollectionSectionComponent {
     return `${price} ﷼`;
   }
 
-  protected getButtonLabel(product: CollectionProduct): string {
+  protected getButtonLabel(product: ProductListItem): string {
     return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
   }
 
@@ -65,7 +66,7 @@ export class FrankelCollectionSectionComponent {
     return this.loadingProductIds.has(productId);
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }

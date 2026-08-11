@@ -4,6 +4,7 @@ export interface TaxonomyApiCategory {
   name: string;
   description?: string;
   subcategories?: TaxonomyApiSubcategory[];
+  isDeleted?: boolean;
 }
 
 export interface TaxonomyApiSubcategory {
@@ -12,6 +13,7 @@ export interface TaxonomyApiSubcategory {
   name: string;
   description?: string;
   category?: string;
+  isDeleted?: boolean;
 }
 
 export interface NavLinkItem {
@@ -19,5 +21,7 @@ export interface NavLinkItem {
   label: string;
   slug: string;
   route: string;
+  categoryId?: string;
+  subcategoryId?: string;
   children: NavLinkItem[];
 }

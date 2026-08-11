@@ -11,8 +11,6 @@ import { SunglassesCollectionPageComponent } from '../../components/sunglasses-c
       breadcrumbParentLabel="Perfumes"
       collectionFolder="Arrogate-collection"
       descriptionLabel="Arrogate"
-      categoryName="Perfumes"
-      subcategoryName="Arrogate"
       subcategoryId="69d50edf9e39253830600b30"
       [includeDeletedProducts]="true"
       [fetchAllSubcategoryPages]="true"

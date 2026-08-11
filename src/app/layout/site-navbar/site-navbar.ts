@@ -17,14 +17,13 @@ import { firstValueFrom, filter } from "rxjs";
 import { AuthService } from "../../core/auth/auth.service";
 import { ArtDedicationService } from "../../core/api/art-dedication.service";
 import { CartService } from "../../core/cart/cart.service";
-import { CollectionProductsService } from "../../core/api/collection-products.service";
 import { CareProductsService } from "../../core/api/care-products.service";
 import { FragrancesService } from "../../core/api/fragrances.service";
+import { ProductListingService } from "../../core/api/product-listing.service";
 import { PromiseHomeProductsService } from "../../core/api/promise-home-products.service";
 import { TaxonomyService } from "../../core/api/taxonomy.service";
-import { NAV_LOCAL_COLLECTIONS } from "../../features/collections/data/nav-route-aliases";
 import { SearchResult } from "../../models/navigation/search-result.model";
-import { CollectionQuery } from "../../models/product/collection-product.model";
+import { ProductListItem } from "../../models/product/product-list-item.model";
 
 @Component({
   selector: "app-site-navbar",
@@ -38,9 +37,7 @@ export class SiteNavbar {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
-  private readonly collectionProductsService = inject(
-    CollectionProductsService,
-  );
+  private readonly productListingService = inject(ProductListingService);
   private readonly careProductsService = inject(CareProductsService);
   private readonly fragrancesService = inject(FragrancesService);
   private readonly artDedicationService = inject(ArtDedicationService);
@@ -242,85 +239,17 @@ export class SiteNavbar {
 
     if (url === "/" || url === "") {
       results = await this.loadHomeSearchResults();
-    } else if (url === "/collections/frankel") {
-      results = await this.loadCollectionResults("category-frankel", "Frankel");
-    } else if (url === "/collections/arrogate") {
-      results = await this.loadCollectionResults(
-        "Arrogate-collection",
-        "Arrogate",
-      );
-    } else if (url === "/collections/pink-wild") {
-      results = await this.loadCollectionResults(
-        "pink-collection",
-        "Pink Collection",
-      );
     } else if (url.startsWith("/collections/")) {
-      const slug = url.split("/")[2] ?? "";
-      const localCollection = NAV_LOCAL_COLLECTIONS[slug];
-
-      results = localCollection
-        ? await this.loadCollectionResults(
-            localCollection.folder,
-            localCollection.title,
-          )
-        : await this.loadHomeSearchResults();
+      results = await this.loadCollectionResultsForUrl(url);
+    } else if (url.startsWith("/category/")) {
+      results = await this.loadCategoryResultsForUrl(url);
+    } else if (LEGACY_ROUTE_SUBCATEGORY_IDS[url]) {
+      results = await this.loadSubcategoryResults(
+        LEGACY_ROUTE_SUBCATEGORY_IDS[url],
+        this.toLabelFromUrl(url),
+      );
     } else if (url === "/care-products") {
       results = await this.loadCareResults();
-    } else if (url === "/watches/classic") {
-      results = await this.loadCollectionResults(
-        "classic-watches",
-        "Classic Watches",
-      );
-    } else if (url === "/watches/sport") {
-      results = await this.loadCollectionResults(
-        "sport-watches",
-        "Sports Watches",
-      );
-    } else if (url === "/watches/women") {
-      results = await this.loadCollectionResults(
-        "women-watches",
-        "Women Watches",
-      );
-    } else if (url === "/bags/women") {
-      results = await this.loadCollectionResults("women-bags", "Women Bags");
-    } else if (url === "/bags/children") {
-      results = await this.loadCollectionResults(
-        "children-bags",
-        "Children Bags",
-      );
-    } else if (url === "/bags/promise") {
-      results = await this.loadCollectionResults(
-        "promise-bags",
-        "Promise Bags",
-      );
-    } else if (url === "/sunglasses/men") {
-      results = await this.loadQueriedCollectionResults(
-        "men-sunglasses",
-        "Men Sunglasses",
-        {
-          categoryName: "Sunglasses",
-          subcategoryName: "men sunglasses",
-        },
-      );
-    } else if (url === "/sunglasses/women") {
-      results = await this.loadQueriedCollectionResults(
-        "women-sunglasses",
-        "Women Sunglasses",
-        {
-          categoryName: "Sunglasses",
-          subcategoryName: "women sunglasses",
-        },
-      );
-    } else if (url === "/offers/buy-1-get-2-free") {
-      results = await this.loadCollectionResults(
-        "buy-one-get2-free",
-        "Buy 1 Get Two Free",
-      );
-    } else if (url === "/offers/buy-2-get-third-free") {
-      results = await this.loadCollectionResults(
-        "buy-two-get-third-free",
-        "Buy 2 Get Third Free",
-      );
     } else {
       results = await this.loadHomeSearchResults();
     }
@@ -330,41 +259,55 @@ export class SiteNavbar {
     return results;
   }
 
-  private async loadCollectionResults(
-    folder: string,
+  private async loadSubcategoryResults(
+    subcategoryId: string,
     collectionLabel: string,
   ): Promise<SearchResult[]> {
     const products = await firstValueFrom(
-      this.collectionProductsService.getCollectionProducts(folder),
+      this.productListingService.getProductsBySubcategory(subcategoryId, {
+        includeDeleted: true,
+        fetchAllPages: true,
+      }),
     );
 
-    return products.map((product) => ({
-      id: `${folder}-${product.id}`,
-      name: product.name,
-      subtitle: collectionLabel,
-      collectionLabel,
-      imageUrl: product.primaryImageUrl,
-      route: ["/product", product.id],
-    }));
+    return this.toSearchResults(products, collectionLabel);
   }
 
-  private async loadQueriedCollectionResults(
-    folder: string,
-    collectionLabel: string,
-    query: CollectionQuery,
-  ): Promise<SearchResult[]> {
+  private async loadCollectionResultsForUrl(url: string): Promise<SearchResult[]> {
+    const [, , firstSegment, secondSegment] = url.split("/");
+    const legacySubcategoryId = LEGACY_COLLECTION_SLUG_SUBCATEGORY_IDS[firstSegment ?? ""];
+
+    if (legacySubcategoryId) {
+      return this.loadSubcategoryResults(legacySubcategoryId, this.toLabelFromSlug(secondSegment ?? firstSegment ?? "Collection"));
+    }
+
+    if (firstSegment && /^[a-f0-9]{24}$/i.test(firstSegment)) {
+      const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryById(firstSegment));
+      return this.loadSubcategoryResults(firstSegment, metadata?.subcategory.name ?? this.toLabelFromSlug(secondSegment ?? firstSegment));
+    }
+
+    const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryBySlug(firstSegment ?? ""));
+
+    return metadata
+      ? this.loadSubcategoryResults(metadata.subcategory._id ?? metadata.subcategory.id ?? "", metadata.subcategory.name)
+      : this.loadHomeSearchResults();
+  }
+
+  private async loadCategoryResultsForUrl(url: string): Promise<SearchResult[]> {
+    const [, , categoryId, slug] = url.split("/");
+
+    if (!categoryId) {
+      return this.loadHomeSearchResults();
+    }
+
     const products = await firstValueFrom(
-      this.collectionProductsService.getProductsByQuery(query),
+      this.productListingService.getProductsByCategory(categoryId, {
+        includeDeleted: true,
+        fetchAllPages: true,
+      }),
     );
 
-    return products.map((product) => ({
-      id: `${folder}-${product.id}`,
-      name: product.name,
-      subtitle: collectionLabel,
-      collectionLabel,
-      imageUrl: product.primaryImageUrl,
-      route: ["/product", product.id],
-    }));
+    return this.toSearchResults(products, this.toLabelFromSlug(slug ?? "Category"));
   }
 
   private async loadCareResults(): Promise<SearchResult[]> {
@@ -387,11 +330,7 @@ export class SiteNavbar {
       await Promise.all([
         firstValueFrom(this.fragrancesService.getFragrances()),
         firstValueFrom(this.artDedicationService.getArtDedicationProducts()),
-        firstValueFrom(
-          this.collectionProductsService.getCollectionProducts(
-            "category-topaco",
-          ),
-        ),
+        this.loadSubcategoryProductsBySlug("category-topaco"),
         firstValueFrom(this.promiseHomeProductsService.getProducts()),
       ]);
 
@@ -430,4 +369,56 @@ export class SiteNavbar {
       })),
     ];
   }
+
+  private async loadSubcategoryProductsBySlug(slug: string): Promise<ProductListItem[]> {
+    const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryBySlug(slug));
+    const subcategoryId = metadata?.subcategory._id ?? metadata?.subcategory.id ?? "";
+
+    return subcategoryId
+      ? firstValueFrom(this.productListingService.getProductsBySubcategory(subcategoryId, {
+          includeDeleted: true,
+          fetchAllPages: true,
+        }))
+      : [];
+  }
+
+  private toSearchResults(products: ProductListItem[], collectionLabel: string): SearchResult[] {
+    return products.map((product) => ({
+      id: `${collectionLabel}-${product.id}`,
+      name: product.name,
+      subtitle: collectionLabel,
+      collectionLabel,
+      imageUrl: product.primaryImageUrl,
+      route: ["/product", product.id],
+    }));
+  }
+
+  private toLabelFromUrl(url: string): string {
+    return this.toLabelFromSlug(url.split("/").filter(Boolean).at(-1) ?? "Collection");
+  }
+
+  private toLabelFromSlug(slug: string): string {
+    return slug
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
 }
+
+const LEGACY_ROUTE_SUBCATEGORY_IDS: Record<string, string> = {
+  "/collections/arrogate": "69d50edf9e39253830600b30",
+  "/collections/frankel": "69d506d49e39253830600ace",
+  "/watches/classic": "69d4fe2a9e39253830600a71",
+  "/watches/sport": "69d4fe2b9e39253830600a73",
+  "/watches/women": "69d4fe2a9e39253830600a72",
+  "/bags/women": "69d4fe299e39253830600a6e",
+  "/bags/children": "69d4fe299e39253830600a6f",
+  "/bags/promise": "69d4fe299e39253830600a70",
+  "/sunglasses/men": "69d4fe289e39253830600a6d",
+  "/sunglasses/women": "69d4fe289e39253830600a6c",
+  "/offers/buy-1-get-2-free": "69d9151a9e392538306047eb",
+  "/offers/buy-2-get-third-free": "69d915199e392538306047ea",
+};
+
+const LEGACY_COLLECTION_SLUG_SUBCATEGORY_IDS: Record<string, string> = {
+  "pink-wild": "69d506d49e39253830600acf",
+};

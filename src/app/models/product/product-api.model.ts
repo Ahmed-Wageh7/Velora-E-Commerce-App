@@ -19,14 +19,20 @@ export interface ApiCategoryRef {
 export interface ApiProductRecord {
   _id?: string;
   id?: number | string;
+  sku?: string;
   name: string;
   description?: string;
   price: number;
+  originalPrice?: number;
+  size?: number | string | null;
   stock?: number;
   images?: ApiImageValue[] | ApiImageValue;
-  coverImage?: string;
+  coverImage?: ApiImageValue;
   category?: string | ApiCategoryRef | null;
   subcategory?: string | ApiCategoryRef | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
   isDeleted?: boolean;
 }
 

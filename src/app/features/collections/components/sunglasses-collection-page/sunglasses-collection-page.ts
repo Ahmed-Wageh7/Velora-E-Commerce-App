@@ -2,14 +2,11 @@ import { AsyncPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, computed, inject, input } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { delay, switchMap } from 'rxjs';
+import { delay, of, switchMap } from 'rxjs';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
-import {
-  CollectionProduct,
-  CollectionQuery,
-} from '../../../../models/product/collection-product.model';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 
@@ -21,7 +18,7 @@ import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 })
 export class SunglassesCollectionPageComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
@@ -34,8 +31,6 @@ export class SunglassesCollectionPageComponent {
   readonly collectionFolder = input.required<string>();
   readonly descriptionLabel = input.required<string>();
   readonly heroImageFile = input.required<string>();
-  readonly categoryName = input.required<string>();
-  readonly subcategoryName = input.required<string>();
   readonly subcategoryId = input<string>();
   readonly fetchAllSubcategoryPages = input(false);
   readonly includeDeletedProducts = input(false);
@@ -60,28 +55,25 @@ export class SunglassesCollectionPageComponent {
         fetchAllSubcategoryPages: this.fetchAllSubcategoryPages(),
         includeDeletedProducts: this.includeDeletedProducts(),
         minimumLoadingMs: this.minimumLoadingMs(),
-        query: {
-          categoryName: this.categoryName(),
-          subcategoryName: this.subcategoryName(),
-        } satisfies CollectionQuery,
       }),
     ),
   ).pipe(
-    switchMap(({ subcategoryId, fetchAllSubcategoryPages, includeDeletedProducts, minimumLoadingMs, query }) =>
+    switchMap(({ subcategoryId, fetchAllSubcategoryPages, includeDeletedProducts, minimumLoadingMs }) =>
       (subcategoryId
-        ? this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, fetchAllSubcategoryPages, {
+        ? this.productListingService.getProductsBySubcategory(subcategoryId, {
             includeDeleted: includeDeletedProducts,
+            fetchAllPages: fetchAllSubcategoryPages,
           })
-        : this.collectionProductsService.getProductsByQuery(query)
+        : of([] as ProductListItem[])
       ).pipe(delay(minimumLoadingMs)),
     ),
   );
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return String(product.id);
   }
 
-  protected getButtonLabel(product: CollectionProduct): string {
+  protected getButtonLabel(product: ProductListItem): string {
     return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
   }
 
@@ -93,11 +85,11 @@ export class SunglassesCollectionPageComponent {
     return `${price} ﷼`;
   }
 
-  protected getVisibleProducts(products: CollectionProduct[]): CollectionProduct[] {
+  protected getVisibleProducts(products: ProductListItem[]): ProductListItem[] {
     return this.getSortedProducts(products).slice(0, this.visibleCount);
   }
 
-  protected canShowMore(products: CollectionProduct[]): boolean {
+  protected canShowMore(products: ProductListItem[]): boolean {
     return this.visibleCount < this.getSortedProducts(products).length;
   }
 
@@ -121,7 +113,7 @@ export class SunglassesCollectionPageComponent {
     this.visibleCount = this.pageSize;
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }
@@ -160,7 +152,7 @@ export class SunglassesCollectionPageComponent {
     }
   }
 
-  private getSortedProducts(products: CollectionProduct[]): CollectionProduct[] {
+  private getSortedProducts(products: ProductListItem[]): ProductListItem[] {
     const sortedProducts = [...products];
 
     switch (this.selectedSort) {

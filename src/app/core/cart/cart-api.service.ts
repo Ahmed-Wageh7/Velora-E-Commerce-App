@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
-import { getApiBaseUrl, getPrimaryImageUrl } from "../api/product-api.utils";
+import { buildMediaUrl, getApiBaseUrl, getPrimaryImageUrl } from "../api/product-api.utils";
 import {
   CartApiItem,
   CartMutationResponse,
@@ -34,7 +34,7 @@ export class CartApiService {
             description: item.product.description,
             price: item.price,
             image: getPrimaryImageUrl(item.product) ?? "",
-            coverImage: item.product.coverImage ?? null,
+            coverImage: buildMediaUrl(item.product.coverImage) || null,
             images: this.extractImages(item.product.images),
             quantity: Math.max(1, Math.floor(item.quantity)),
           }),

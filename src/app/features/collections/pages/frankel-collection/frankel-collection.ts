@@ -11,8 +11,6 @@ import { SunglassesCollectionPageComponent } from '../../components/sunglasses-c
       breadcrumbParentLabel="Perfumes"
       collectionFolder="category-frankel"
       descriptionLabel="Frankel"
-      categoryName="Perfumes"
-      subcategoryName="Frankel"
       subcategoryId="69d506d49e39253830600ace"
       [includeDeletedProducts]="true"
       [fetchAllSubcategoryPages]="true"

@@ -47,6 +47,22 @@ export const routes: Routes = [
     title: "Register | Veloura",
   },
   {
+    path: "collections/:subcategoryId/:slug",
+    loadComponent: () =>
+      import("./features/collections/pages/local-collection-gallery/local-collection-gallery").then(
+        (module) => module.LocalCollectionGalleryPageComponent,
+      ),
+    title: "Collection | Veloura",
+  },
+  {
+    path: "category/:categoryId/:slug",
+    loadComponent: () =>
+      import("./features/collections/pages/local-collection-gallery/local-collection-gallery").then(
+        (module) => module.LocalCollectionGalleryPageComponent,
+      ),
+    title: "Category | Veloura",
+  },
+  {
     path: "care-products",
     loadComponent: () =>
       import("./features/collections/pages/care-products/care-products").then(

@@ -10,8 +10,6 @@ import { PromoOfferPageComponent } from '../../components/promo-offer-page/promo
       breadcrumbLabel="Buy 1 Get Two Free"
       collectionFolder="buy-one-get2-free"
       descriptionLabel="buy one get two free offer"
-      categoryName="Buy 1 get two free"
-      subcategoryName="Buy 1 get two free"
       subcategoryId="69d9151a9e392538306047eb"
       [includeDeletedProducts]="true"
       [fetchAllPages]="true"

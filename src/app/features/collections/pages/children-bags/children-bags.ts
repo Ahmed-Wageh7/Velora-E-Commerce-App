@@ -10,8 +10,6 @@ import { BagCollectionPageComponent } from '../../components/bag-collection-page
       breadcrumbLabel="Children"
       collectionFolder="children-bags"
       descriptionLabel="children bag"
-      categoryName="Assaf Bags"
-      subcategoryName="children bags"
       subcategoryId="69d4fe299e39253830600a6f"
       [includeDeletedProducts]="true"
       [fetchAllPages]="true"

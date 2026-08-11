@@ -9,8 +9,9 @@ import { PromiseHomeProduct, PromiseHomeProductApiRecord } from '../../models/pr
 })
 export class PromiseHomeProductsService {
   private readonly productCollectionsService = inject(ProductCollectionsService);
+  private readonly promiseBagsSubcategoryId = '69d4fe299e39253830600a70';
   private readonly products$ = this.productCollectionsService
-    .getProductsByQuery({ categoryName: 'Assaf Bags', subcategoryName: 'promise bag' })
+    .getProductsBySubcategoryId(this.promiseBagsSubcategoryId)
     .pipe(
       map((products) => products.map((product) => this.toProduct(product))),
       shareReplay(1),

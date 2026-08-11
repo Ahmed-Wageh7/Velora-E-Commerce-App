@@ -10,8 +10,6 @@ import { SunglassesCollectionPageComponent } from '../../components/sunglasses-c
       breadcrumbLabel="Women’s Sunglasses"
       collectionFolder="women-sunglasses"
       descriptionLabel="women sunglasses"
-      categoryName="Sunglasses"
-      subcategoryName="women sunglasses"
       subcategoryId="69d4fe289e39253830600a6c"
       [fetchAllSubcategoryPages]="true"
       [includeDeletedProducts]="true"

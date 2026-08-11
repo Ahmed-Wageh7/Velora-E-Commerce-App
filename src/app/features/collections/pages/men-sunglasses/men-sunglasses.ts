@@ -10,8 +10,6 @@ import { SunglassesCollectionPageComponent } from '../../components/sunglasses-c
       breadcrumbLabel="Men’s Sunglasses"
       collectionFolder="men-sunglasses"
       descriptionLabel="men sunglasses"
-      categoryName="Assaf Sunglasses"
-      subcategoryName="men sunglasses"
       subcategoryId="69d4fe289e39253830600a6d"
       [includeDeletedProducts]="true"
       [fetchAllSubcategoryPages]="true"

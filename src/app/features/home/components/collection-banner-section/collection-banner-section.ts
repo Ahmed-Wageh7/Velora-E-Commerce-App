@@ -1,13 +1,14 @@
 import { ChangeDetectorRef, Component, computed, inject, input } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { of, switchMap } from 'rxjs';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
+import { TaxonomyService } from '../../../../core/api/taxonomy.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
-import { CollectionProduct } from '../../../../models/product/collection-product.model';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 
 @Component({
   selector: 'app-collection-banner-section',
@@ -17,7 +18,8 @@ import { CollectionProduct } from '../../../../models/product/collection-product
 })
 export class CollectionBannerSectionComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
+  private readonly taxonomyService = inject(TaxonomyService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
@@ -47,7 +49,7 @@ export class CollectionBannerSectionComponent {
     ).pipe(
       switchMap(({ subcategoryId, collectionFolder, includeDeletedProducts, fetchAllPages }) =>
         toRequestState(this.getProductsSource(subcategoryId, collectionFolder, includeDeletedProducts, fetchAllPages), {
-          initialData: [] as CollectionProduct[],
+          initialData: [] as ProductListItem[],
           loadingMessage: 'Loading products...',
           emptyMessage: 'No products are available right now.',
           errorMessage: 'We could not load this collection right now.',
@@ -57,7 +59,7 @@ export class CollectionBannerSectionComponent {
     {
       initialValue: {
         status: 'loading' as const,
-        data: [] as CollectionProduct[],
+        data: [] as ProductListItem[],
         message: 'Loading products...',
       },
     },
@@ -68,7 +70,7 @@ export class CollectionBannerSectionComponent {
     return this.productsState().data.slice(start, start + this.productLimit());
   });
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return `${product.id}`;
   }
 
@@ -76,7 +78,7 @@ export class CollectionBannerSectionComponent {
     return `${price} ﷼`;
   }
 
-  protected getButtonLabel(product: CollectionProduct): string {
+  protected getButtonLabel(product: ProductListItem): string {
     return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
   }
 
@@ -84,7 +86,7 @@ export class CollectionBannerSectionComponent {
     return this.loadingProductIds.has(productId);
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }
@@ -134,23 +136,27 @@ export class CollectionBannerSectionComponent {
     includeDeletedProducts: boolean,
     fetchAllPages: boolean,
   ) {
-    if (collectionFolder?.trim()) {
-      return this.collectionProductsService.getCollectionProductsWithOptions(collectionFolder, {
+    if (subcategoryId?.trim()) {
+      return this.productListingService.getProductsBySubcategory(subcategoryId, {
         includeDeleted: includeDeletedProducts,
         fetchAllPages,
       });
     }
 
-    if (subcategoryId?.trim()) {
-      return this.collectionProductsService.getProductsBySubcategoryId(subcategoryId, fetchAllPages, {
-        includeDeleted: includeDeletedProducts,
-      });
+    if (collectionFolder?.trim()) {
+      return this.taxonomyService.findSubcategoryBySlug(collectionFolder).pipe(
+        switchMap((match) =>
+          match?.subcategory._id
+            ? this.productListingService.getProductsBySubcategory(match.subcategory._id, {
+                includeDeleted: includeDeletedProducts,
+                fetchAllPages,
+              })
+            : of([] as ProductListItem[]),
+        ),
+      );
     }
 
-    return this.collectionProductsService.getProductsByQuery(undefined, {
-      includeDeleted: includeDeletedProducts,
-      fetchAllPages,
-    });
+    return of([] as ProductListItem[]);
   }
 
   private getSectionLabel(): string {

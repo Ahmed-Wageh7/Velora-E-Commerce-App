@@ -3,10 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { ProductListingService } from '../../../../core/api/product-listing.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
-import { CollectionProduct } from '../../../../models/product/collection-product.model';
+import { ProductListItem } from '../../../../models/product/product-list-item.model';
 
 @Component({
   selector: 'app-promise-showcase',
@@ -16,7 +16,7 @@ import { CollectionProduct } from '../../../../models/product/collection-product
 })
 export class PromiseShowcaseComponent {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly collectionProductsService = inject(CollectionProductsService);
+  private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
@@ -25,10 +25,11 @@ export class PromiseShowcaseComponent {
   private readonly promiseBagsSubcategoryId = '69d4fe299e39253830600a70';
 
   protected readonly productsState = toSignal(
-    toRequestState(this.collectionProductsService.getProductsBySubcategoryId(this.promiseBagsSubcategoryId, true, {
+    toRequestState(this.productListingService.getProductsBySubcategory(this.promiseBagsSubcategoryId, {
+      fetchAllPages: true,
       includeDeleted: true,
     }), {
-      initialData: [] as CollectionProduct[],
+      initialData: [] as ProductListItem[],
       loadingMessage: 'Loading products...',
       emptyMessage: 'No Promise Bags products are available right now.',
       errorMessage: 'We could not load Promise Bags right now.',
@@ -36,13 +37,13 @@ export class PromiseShowcaseComponent {
     {
       initialValue: {
         status: 'loading',
-        data: [] as CollectionProduct[],
+        data: [] as ProductListItem[],
         message: 'Loading products...',
       },
     },
   );
 
-  protected trackById(_: number, product: CollectionProduct): string {
+  protected trackById(_: number, product: ProductListItem): string {
     return String(product.id);
   }
 
@@ -50,7 +51,7 @@ export class PromiseShowcaseComponent {
     return `${price} ﷼`;
   }
 
-  protected getButtonLabel(product: CollectionProduct): string {
+  protected getButtonLabel(product: ProductListItem): string {
     return product.quantity > 0 ? 'Add to cart' : 'Out of stock';
   }
 
@@ -58,7 +59,7 @@ export class PromiseShowcaseComponent {
     return this.loadingProductIds.has(productId);
   }
 
-  protected async addToCart(product: CollectionProduct, event: MouseEvent): Promise<void> {
+  protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
     if (product.quantity <= 0) {
       return;
     }

@@ -14,12 +14,12 @@ import {
   Validators,
 } from "@angular/forms";
 import { Router, RouterLink } from "@angular/router";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, of } from "rxjs";
 import { AuthService } from "../../../../core/auth/auth.service";
 import { CartService } from "../../../../core/cart/cart.service";
-import { CollectionProductsService } from "../../../../core/api/collection-products.service";
 import { OrdersApiService } from "../../../../core/checkout/orders-api.service";
 import { ProductDetailsService } from "../../../../core/api/product-details.service";
+import { ProductListingService } from "../../../../core/api/product-listing.service";
 import { ProductsService } from "../../../../core/api/products.service";
 import { StripePaymentService } from "../../../../core/checkout/stripe-payment.service";
 import { ToastService } from "../../../../core/notifications/toast.service";
@@ -27,7 +27,7 @@ import { SiteNavbar } from "../../../../layout/site-navbar/site-navbar";
 import { CartItem } from "../../../../models/cart/cart.model";
 import { SubmittedOrderState } from "../../../../models/checkout/order.model";
 import { StripeCardElement } from "../../../../models/checkout/stripe.model";
-import { CollectionProduct } from "../../../../models/product/collection-product.model";
+import { ProductListItem } from "../../../../models/product/product-list-item.model";
 
 @Component({
   selector: "app-checkout-page",
@@ -41,19 +41,12 @@ export class CheckoutPageComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly cartService = inject(CartService);
-  private readonly collectionProductsService = inject(
-    CollectionProductsService,
-  );
   private readonly ordersApiService = inject(OrdersApiService);
   private readonly productDetailsService = inject(ProductDetailsService);
+  private readonly productListingService = inject(ProductListingService);
   private readonly productsService = inject(ProductsService);
   private readonly stripePaymentService = inject(StripePaymentService);
   private readonly toastService = inject(ToastService);
-  private readonly specialCollectionSubcategoryIds: Record<string, string> = {
-    "Arrogate-collection": "69d50edf9e39253830600b30",
-    "category-frankel": "69d506d49e39253830600ace",
-    "promise-bags": "69d4fe299e39253830600a70",
-  };
   protected activeLineItemId: string | null = null;
   protected activeLineItemAction: "increase" | "decrease" | "remove" | null =
     null;
@@ -455,9 +448,7 @@ export class CheckoutPageComponent implements OnDestroy {
     }
 
     try {
-      const products = await firstValueFrom(
-        this.getCollectionProductsForFolder(folder),
-      );
+      const products = await firstValueFrom(this.getCollectionProductsForFolder(folder));
       const match = this.findMatchingCollectionProductId(item, products);
 
       return match?.id ?? null;
@@ -467,31 +458,22 @@ export class CheckoutPageComponent implements OnDestroy {
   }
 
   private getCollectionProductsForFolder(folder: string) {
-    const subcategoryId = this.specialCollectionSubcategoryIds[folder];
+    const subcategoryId = LEGACY_DETAIL_FOLDER_SUBCATEGORY_IDS[folder];
 
     if (subcategoryId) {
-      return this.collectionProductsService.getProductsBySubcategoryId(
-        subcategoryId,
-        true,
-        {
+      return this.productListingService.getProductsBySubcategory(subcategoryId, {
           includeDeleted: true,
-        },
-      );
+          fetchAllPages: true,
+        });
     }
 
-    return this.collectionProductsService.getCollectionProductsWithOptions(
-      folder,
-      {
-        includeDeleted: true,
-        fetchAllPages: true,
-      },
-    );
+    return of([] as ProductListItem[]);
   }
 
   private findMatchingCollectionProductId(
     item: CartItem,
-    products: CollectionProduct[],
-  ): CollectionProduct | null {
+    products: ProductListItem[],
+  ): ProductListItem | null {
     const normalizedName = this.normalizeLookup(item.name);
     const normalizedImage = this.normalizeLookup(item.image);
     const normalizedDescription = this.normalizeLookup(item.description);
@@ -550,3 +532,21 @@ export class CheckoutPageComponent implements OnDestroy {
       .replace(/^\/+/, "");
   }
 }
+
+const LEGACY_DETAIL_FOLDER_SUBCATEGORY_IDS: Record<string, string> = {
+  "Arrogate-collection": "69d50edf9e39253830600b30",
+  "category-frankel": "69d506d49e39253830600ace",
+  "pink-collection": "69d506d49e39253830600acf",
+  "promise-bags": "69d4fe299e39253830600a70",
+  "women-bags": "69d4fe299e39253830600a6e",
+  "children-bags": "69d4fe299e39253830600a6f",
+  "classic-watches": "69d4fe2a9e39253830600a71",
+  "sports-watches": "69d4fe2b9e39253830600a73",
+  "sport-watches": "69d4fe2b9e39253830600a73",
+  "women-watches": "69d4fe2a9e39253830600a72",
+  "men-sunglasses": "69d4fe289e39253830600a6d",
+  "women-sunglasses": "69d4fe289e39253830600a6c",
+  "buy-one-get2-free": "69d9151a9e392538306047eb",
+  "buy-two-get-third-free": "69d915199e392538306047ea",
+  care: "69d534779e39253830600cc2",
+};
