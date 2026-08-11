@@ -71,6 +71,12 @@ export class TaxonomyService {
     );
   }
 
+  findCategoryById(categoryId: string): Observable<TaxonomyApiCategory | null> {
+    return this.categories$.pipe(
+      map((categories) => categories.find((category) => (category._id ?? category.id) === categoryId) ?? null),
+    );
+  }
+
   findCategoryBySlug(slug: string): Observable<TaxonomyApiCategory | null> {
     const normalizedSlug = this.slugify(slug);
 

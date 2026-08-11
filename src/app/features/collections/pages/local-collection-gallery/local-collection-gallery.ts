@@ -12,6 +12,7 @@ import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 import { NAV_LOCAL_COLLECTIONS } from '../../../../features/collections/data/nav-route-aliases';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { RequestState } from '../../../../models/common/request-state.model';
+import { LocalCollectionPageConfig } from '../../../../models/collection/local-collection.model';
 import { ProductListItem } from '../../../../models/product/product-list-item.model';
 
 @Component({
@@ -45,7 +46,58 @@ export class LocalCollectionGalleryPageComponent {
   );
 
   protected readonly sortOptions = ['Our Suggestions', 'Newest', 'Price: Low to High', 'Price: High to Low'];
-  protected readonly collection = computed(() => NAV_LOCAL_COLLECTIONS[this.slug()] ?? null);
+  private readonly apiCollection = toSignal(
+    this.route.paramMap.pipe(
+      switchMap((params) => {
+        const slug = params.get('slug') ?? '';
+        const subcategoryId = params.get('subcategoryId') ?? '';
+        const categoryId = params.get('categoryId') ?? '';
+        const currentCollection = NAV_LOCAL_COLLECTIONS[slug];
+
+        if (categoryId) {
+          return this.taxonomyService.findCategoryById(categoryId).pipe(
+            map((category) =>
+              category
+                ? this.toCollectionConfig(category.name, currentCollection?.folder ?? slug)
+                : null,
+            ),
+          );
+        }
+
+        const metadata$ = subcategoryId
+          ? this.taxonomyService.findSubcategoryById(subcategoryId)
+          : this.taxonomyService.findSubcategoryBySlug(currentCollection?.folder ?? slug);
+
+        return metadata$.pipe(
+          map((metadata) =>
+            metadata
+              ? this.toCollectionConfig(metadata.subcategory.name, currentCollection?.folder ?? slug)
+              : null,
+          ),
+        );
+      }),
+    ),
+    { initialValue: null as LocalCollectionPageConfig | null },
+  );
+  protected readonly collection = computed(() => {
+    const slug = this.slug();
+    const localCollection = NAV_LOCAL_COLLECTIONS[slug] ?? null;
+    const apiCollection = this.apiCollection();
+
+    if (localCollection || apiCollection) {
+      return {
+        ...(apiCollection ?? this.toCollectionConfig(this.toTitleFromSlug(slug), slug)),
+        ...(localCollection ?? {}),
+        title: apiCollection?.title ?? localCollection?.title ?? this.toTitleFromSlug(slug),
+      };
+    }
+
+    if (slug || this.routeSubcategoryId() || this.routeCategoryId()) {
+      return this.toCollectionConfig(this.toTitleFromSlug(slug || 'collection'), slug);
+    }
+
+    return null;
+  });
   protected readonly selectedSort = signal(this.sortOptions[0]);
   protected readonly visibleCount = signal(this.pageSize);
   protected isShowingMore = false;
@@ -259,5 +311,26 @@ export class LocalCollectionGalleryPageComponent {
 
   private waitForButtonFeedback(): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, 240));
+  }
+
+  private toCollectionConfig(title: string, folder: string): LocalCollectionPageConfig {
+    return {
+      title: this.toBrandLabel(title),
+      folder,
+      imageFiles: [],
+      products: [],
+      includeDeletedProducts: true,
+      fetchAllPages: true,
+    };
+  }
+
+  private toTitleFromSlug(slug: string): string {
+    return slug
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  private toBrandLabel(value: string): string {
+    return value.replace(/assaf/gi, 'Veloura').replace(/عساف/g, 'Veloura');
   }
 }
