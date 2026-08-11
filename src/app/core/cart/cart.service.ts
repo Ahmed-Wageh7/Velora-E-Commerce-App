@@ -9,23 +9,10 @@ import {
 } from "@angular/core";
 import { Router } from "@angular/router";
 import { AuthService } from "../auth/auth.service";
-import { CartApiItem, CartApiService } from "./cart-api.service";
-import { Product } from "../api/products.service";
+import { CartApiService } from "./cart-api.service";
 import { ToastService } from "../notifications/toast.service";
-
-export interface CartItem {
-  id: string;
-  productId: string;
-  detailProductId?: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  coverImage: string | null;
-  images: string[];
-  quantity: number;
-  detailFolder?: string;
-}
+import { CartApiItem, CartItem } from "../../models/cart/cart.model";
+import { Product } from "../../models/product/product.model";
 
 @Injectable({
   providedIn: "root",

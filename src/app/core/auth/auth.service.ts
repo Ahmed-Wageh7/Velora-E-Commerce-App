@@ -17,23 +17,14 @@ import {
   switchMap,
   tap,
 } from "rxjs";
-import { AuthApiResponse, AuthApiService } from "./auth-api.service";
+import { AuthApiService } from "./auth-api.service";
 import { ToastService } from "../notifications/toast.service";
-
-interface AuthApiUser {
-  _id?: string;
-  id?: string;
-  name?: string;
-  email: string;
-  phone?: string;
-}
-
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-}
+import {
+  AuthApiResponse,
+  AuthApiResponseData,
+  AuthApiUser,
+  AuthUser,
+} from "../../models/auth/auth.model";
 
 @Injectable({
   providedIn: "root",
@@ -342,11 +333,7 @@ export class AuthService {
     };
   }
 
-  private getResponseData(response: AuthApiResponse): {
-    user?: AuthApiUser;
-    token?: string;
-    accessToken?: string;
-  } | null {
+  private getResponseData(response: AuthApiResponse): AuthApiResponseData | null {
     return response.data && !this.isAuthApiUser(response.data)
       ? response.data
       : null;

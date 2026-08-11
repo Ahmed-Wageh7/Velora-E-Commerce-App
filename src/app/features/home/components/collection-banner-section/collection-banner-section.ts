@@ -4,12 +4,10 @@ import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import {
-  CollectionProduct,
-  CollectionProductsService,
-} from '../../../../core/api/collection-products.service';
+import { CollectionProductsService } from '../../../../core/api/collection-products.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
+import { CollectionProduct } from '../../../../models/product/collection-product.model';
 
 @Component({
   selector: 'app-collection-banner-section',

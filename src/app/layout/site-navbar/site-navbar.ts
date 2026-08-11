@@ -23,7 +23,8 @@ import { FragrancesService } from "../../core/api/fragrances.service";
 import { PromiseHomeProductsService } from "../../core/api/promise-home-products.service";
 import { TaxonomyService } from "../../core/api/taxonomy.service";
 import { NAV_LOCAL_COLLECTIONS } from "../../features/collections/data/nav-route-aliases";
-import { CollectionQuery } from "../../core/api/product-api.utils";
+import { SearchResult } from "../../models/navigation/search-result.model";
+import { CollectionQuery } from "../../models/product/collection-product.model";
 
 @Component({
   selector: "app-site-navbar",
@@ -429,13 +430,4 @@ export class SiteNavbar {
       })),
     ];
   }
-}
-
-interface SearchResult {
-  id: string;
-  name: string;
-  subtitle: string;
-  collectionLabel: string;
-  imageUrl: string;
-  route: (string | number)[];
 }

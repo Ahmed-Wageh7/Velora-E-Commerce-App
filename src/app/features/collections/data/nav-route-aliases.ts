@@ -1,4 +1,5 @@
-import { LocalCollectionPageConfig, LOCAL_COLLECTIONS } from './local-collection-data';
+import { LocalCollectionPageConfig } from '../../../models/collection/local-collection.model';
+import { LOCAL_COLLECTIONS } from './local-collection-data';
 
 const aliasEntries: Array<[string, LocalCollectionPageConfig]> = [
   [

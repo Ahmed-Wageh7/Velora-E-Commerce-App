@@ -1,42 +1,13 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
+import { getApiBaseUrl, getPrimaryImageUrl } from "../api/product-api.utils";
 import {
-  ApiProductRecord,
-  getApiBaseUrl,
-  getPrimaryImageUrl,
-} from "../api/product-api.utils";
-
-interface CartResponse {
-  cart: {
-    items: CartApiResponseItem[];
-  };
-}
-
-interface CartApiResponseItem {
-  _id: string;
-  product: ApiProductRecord;
-  quantity: number;
-  price: number;
-}
-
-interface CartMutationResponse {
-  message: string;
-  cart: unknown;
-}
-
-export interface CartApiItem {
-  cartItemId: string;
-  productId: string;
-  name: string;
-  description?: string;
-  price: number;
-  image: string;
-  coverImage: string | null;
-  images: string[];
-  quantity: number;
-  detailFolder?: string;
-}
+  CartApiItem,
+  CartMutationResponse,
+  CartResponse,
+} from "../../models/cart/cart.model";
+import { ApiProductRecord } from "../../models/product/product-api.model";
 
 @Injectable({
   providedIn: "root",

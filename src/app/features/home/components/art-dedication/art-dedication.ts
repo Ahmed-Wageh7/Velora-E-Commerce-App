@@ -3,9 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { ArtDedicationProduct, ArtDedicationService } from '../../../../core/api/art-dedication.service';
+import { ArtDedicationService } from '../../../../core/api/art-dedication.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
+import { ArtDedicationProduct } from '../../../../models/product/home-product.model';
 
 @Component({
   selector: 'app-art-dedication',

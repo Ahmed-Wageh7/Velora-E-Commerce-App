@@ -5,11 +5,13 @@ import { delay, map, of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { CollectionProduct, CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { CollectionProductsService } from '../../../../core/api/collection-products.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 import { NAV_LOCAL_COLLECTIONS } from '../../../../features/collections/data/nav-route-aliases';
-import { RequestState, toRequestState } from '../../../../core/utils/request-state';
+import { toRequestState } from '../../../../core/utils/request-state';
+import { RequestState } from '../../../../models/common/request-state.model';
+import { CollectionProduct } from '../../../../models/product/collection-product.model';
 
 @Component({
   selector: 'app-local-collection-gallery-page',

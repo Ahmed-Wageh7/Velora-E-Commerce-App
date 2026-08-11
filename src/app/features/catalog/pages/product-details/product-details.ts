@@ -15,13 +15,11 @@ import { catchError, map, of, startWith, switchMap } from "rxjs";
 
 import { CartAnimationService } from "../../../../core/cart/cart-animation.service";
 import { CartService } from "../../../../core/cart/cart.service";
-import {
-  ProductDetails,
-  ProductDetailsService,
-} from "../../../../core/api/product-details.service";
+import { ProductDetailsService } from "../../../../core/api/product-details.service";
 import { ToastService } from "../../../../core/notifications/toast.service";
 import { SiteNavbar } from "../../../../layout/site-navbar/site-navbar";
-import { RequestState } from "../../../../core/utils/request-state";
+import { RequestState } from "../../../../models/common/request-state.model";
+import { ProductDetails } from "../../../../models/product/product-details.model";
 
 @Component({
   selector: "app-product-details-page",

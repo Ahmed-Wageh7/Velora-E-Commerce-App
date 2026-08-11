@@ -3,9 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
-import { FragranceProduct, FragrancesService } from '../../../../core/api/fragrances.service';
+import { FragrancesService } from '../../../../core/api/fragrances.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
+import { FragranceProduct } from '../../../../models/product/home-product.model';
 
 @Component({
   selector: 'app-fragrances-section',

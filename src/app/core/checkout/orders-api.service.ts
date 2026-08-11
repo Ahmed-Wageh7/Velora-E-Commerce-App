@@ -2,49 +2,13 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, timeout } from 'rxjs';
 import { getApiBaseUrl } from '../api/product-api.utils';
-
-export interface OrderShippingAddress {
-  street: string;
-  city: string;
-  country: string;
-  postalCode: string;
-}
-
-export interface CheckoutOrderPayload {
-  paymentMethod: string;
-  shippingAddress: OrderShippingAddress;
-}
-
-export interface CheckoutOrderConfirmation {
-  id: string | null;
-  status: string;
-  paymentMethod: string;
-  shippingAddress: OrderShippingAddress;
-}
-
-interface CheckoutApiResponse {
-  success?: boolean;
-  message?: string;
-  order?: unknown;
-  data?: unknown;
-}
-
-interface StripeIntentApiResponse {
-  clientSecret?: string;
-  paymentIntentId?: string;
-  data?: unknown;
-}
-
-type CheckoutResult =
-  | {
-      ok: true;
-      message: string;
-      order: CheckoutOrderConfirmation | null;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
+import {
+  CheckoutApiResponse,
+  CheckoutOrderConfirmation,
+  CheckoutOrderPayload,
+  CheckoutResult,
+  StripeIntentApiResponse,
+} from '../../models/checkout/order.model';
 
 @Injectable({
   providedIn: 'root',

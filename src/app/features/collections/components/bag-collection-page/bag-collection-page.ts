@@ -5,12 +5,12 @@ import { RouterLink } from '@angular/router';
 import { delay, switchMap } from 'rxjs';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
 import { CartService } from '../../../../core/cart/cart.service';
+import { CollectionProductsService } from '../../../../core/api/collection-products.service';
 import {
   CollectionProduct,
   CollectionProductOptions,
-  CollectionProductsService,
-} from '../../../../core/api/collection-products.service';
-import { CollectionQuery } from '../../../../core/api/product-api.utils';
+  CollectionQuery,
+} from '../../../../models/product/collection-product.model';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 

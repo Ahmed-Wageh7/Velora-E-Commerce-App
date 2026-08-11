@@ -1,13 +1,7 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
-
-export interface StripeCardElement {
-  mount(domElement: HTMLElement): void;
-  unmount(): void;
-  destroy(): void;
-  on(eventName: 'change', handler: (event: { error?: { message?: string } }) => void): void;
-}
+import { StripeCardElement } from '../../models/checkout/stripe.model';
 
 interface StripeElements {
   create(type: 'card', options?: Record<string, unknown>): StripeCardElement;

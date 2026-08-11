@@ -2,8 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, shareReplay } from 'rxjs';
 import {
-  ApiImageValue,
-  ApiProductsListResponse,
   buildProductsListUrl,
   extractProducts,
   getCoverImageUrl,
@@ -13,23 +11,8 @@ import {
   getProductQuantity,
   getPrimaryImageUrl,
 } from './product-api.utils';
-
-export interface Product {
-  id: string;
-  detailProductId?: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  quantity?: number;
-  description: string;
-  image: string;
-  images?: ApiImageValue[] | ApiImageValue;
-  primaryImage?: string;
-  coverImage?: string;
-  cornerImage?: string;
-  conerImage?: string;
-  detailFolder?: string;
-}
+import { ApiProductsListResponse } from '../../models/product/product-api.model';
+import { Product } from '../../models/product/product.model';
 
 @Injectable({
   providedIn: 'root',

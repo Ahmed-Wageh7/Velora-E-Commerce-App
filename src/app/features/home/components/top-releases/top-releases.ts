@@ -2,8 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { CollectionProduct, CollectionProductsService } from '../../../../core/api/collection-products.service';
+import { CollectionProductsService } from '../../../../core/api/collection-products.service';
 import { toRequestState } from '../../../../core/utils/request-state';
+import { CollectionProduct } from '../../../../models/product/collection-product.model';
 
 @Component({
   selector: 'app-top-releases',

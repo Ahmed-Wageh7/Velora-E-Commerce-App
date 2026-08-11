@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 import {
-  ApiProductRecord,
   getCoverImageUrl,
   getCornerImageUrl,
   getHoverImageUrl,
@@ -11,22 +10,7 @@ import {
   getPrimaryImageUrl,
 } from './product-api.utils';
 import { ProductCollectionsService } from './product-collections.service';
-
-interface CareProductApiRecord extends ApiProductRecord {}
-
-export interface CareProduct {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  quantity: number;
-  primaryImageUrl: string;
-  hoverImageUrl: string;
-  primaryImageAlt: string;
-  hoverImageAlt: string;
-  coverImageUrl?: string;
-  cornerImageUrl?: string;
-}
+import { CareProduct, CareProductApiRecord } from '../../models/product/home-product.model';
 
 @Injectable({
   providedIn: 'root',

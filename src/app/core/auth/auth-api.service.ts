@@ -2,29 +2,7 @@ import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { Observable, timeout } from "rxjs";
 import { environment } from "../../../environments/environment";
-
-interface AuthApiUser {
-  _id?: string;
-  id?: string;
-  name?: string;
-  email: string;
-  phone?: string;
-}
-
-export interface AuthApiResponse {
-  success?: boolean;
-  message?: string;
-  accessToken?: string;
-  token?: string;
-  user?: AuthApiUser;
-  data?:
-    | AuthApiUser
-    | {
-        user?: AuthApiUser;
-        token?: string;
-        accessToken?: string;
-      };
-}
+import { AuthApiResponse, AuthApiUser } from "../../models/auth/auth.model";
 
 @Injectable({
   providedIn: "root",

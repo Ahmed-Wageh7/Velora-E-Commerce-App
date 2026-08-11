@@ -1,86 +1,14 @@
 import { environment } from "../../../environments/environment";
-
-interface ApiImageObject {
-  url?: string;
-  imageUrl?: string;
-  src?: string;
-  path?: string;
-}
-
-export type ApiImageValue = string | ApiImageObject | null | undefined;
-
-export interface ApiCategoryRef {
-  _id?: string;
-  id?: string;
-  name?: string;
-}
-
-export interface ApiProductRecord {
-  _id?: string;
-  id?: number | string;
-  name: string;
-  description?: string;
-  price: number;
-  stock?: number;
-  images?: ApiImageValue[] | ApiImageValue;
-  coverImage?: string;
-  category?: string | ApiCategoryRef | null;
-  subcategory?: string | ApiCategoryRef | null;
-  isDeleted?: boolean;
-}
-
-export interface ApiResponseEnvelope<T> {
-  success?: boolean;
-  message?: string;
-  data?: T;
-}
-
-export interface ApiPagination {
-  page?: number;
-  limit?: number;
-  total?: number;
-  pages?: number;
-}
-
-export interface ApiProductsListResponse
-  extends ApiResponseEnvelope<ApiProductRecord[]> {
-  products?: ApiProductRecord[];
-  pagination?: ApiPagination;
-  page?: number;
-  limit?: number;
-  total?: number;
-  pages?: number;
-}
-
-export interface TaxonomyApiCategory {
-  _id?: string;
-  id?: string;
-  name: string;
-  description?: string;
-  subcategories?: TaxonomyApiSubcategory[];
-}
-
-export interface TaxonomyApiSubcategory {
-  _id?: string;
-  id?: string;
-  name: string;
-  description?: string;
-  category?: string;
-}
-
-export interface TaxonomyApiResponse
-  extends ApiResponseEnvelope<TaxonomyApiCategory[]> {
-  categories?: TaxonomyApiCategory[];
-}
-
-export interface CollectionQuery {
-  categoryName?: string;
-  subcategoryName?: string;
-}
-
-export interface ExtractProductsOptions {
-  includeDeleted?: boolean;
-}
+import { ApiResponseEnvelope } from "../../models/common/api-response.model";
+import {
+  ApiCategoryRef,
+  ApiImageValue,
+  ApiProductRecord,
+  ApiProductsListResponse,
+  ExtractProductsOptions,
+  TaxonomyApiResponse,
+} from "../../models/product/product-api.model";
+import { TaxonomyApiCategory } from "../../models/taxonomy/taxonomy.model";
 
 const apiBaseUrl = environment.apiBaseUrl.replace(/\/$/, "");
 

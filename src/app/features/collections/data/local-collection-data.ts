@@ -1,15 +1,4 @@
-import { CollectionProductSeed } from '../../../core/api/collection-products.service';
-
-export interface LocalCollectionPageConfig {
-  title: string;
-  folder: string;
-  imageFiles: string[];
-  products: CollectionProductSeed[];
-  heroImageFile?: string;
-  includeDeletedProducts?: boolean;
-  fetchAllPages?: boolean;
-  minimumLoadingMs?: number;
-}
+import { LocalCollectionPageConfig } from '../../../models/collection/local-collection.model';
 
 export const LOCAL_COLLECTIONS: Record<string, LocalCollectionPageConfig> = {
   'wild-colt': {

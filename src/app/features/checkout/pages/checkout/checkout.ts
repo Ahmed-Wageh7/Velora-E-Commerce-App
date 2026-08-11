@@ -16,27 +16,18 @@ import {
 import { Router, RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { AuthService } from "../../../../core/auth/auth.service";
-import { CartItem, CartService } from "../../../../core/cart/cart.service";
-import {
-  CollectionProduct,
-  CollectionProductsService,
-} from "../../../../core/api/collection-products.service";
-import {
-  CheckoutOrderConfirmation,
-  OrdersApiService,
-} from "../../../../core/checkout/orders-api.service";
+import { CartService } from "../../../../core/cart/cart.service";
+import { CollectionProductsService } from "../../../../core/api/collection-products.service";
+import { OrdersApiService } from "../../../../core/checkout/orders-api.service";
 import { ProductDetailsService } from "../../../../core/api/product-details.service";
 import { ProductsService } from "../../../../core/api/products.service";
-import {
-  StripeCardElement,
-  StripePaymentService,
-} from "../../../../core/checkout/stripe-payment.service";
+import { StripePaymentService } from "../../../../core/checkout/stripe-payment.service";
 import { ToastService } from "../../../../core/notifications/toast.service";
 import { SiteNavbar } from "../../../../layout/site-navbar/site-navbar";
-
-interface SubmittedOrderState extends CheckoutOrderConfirmation {
-  message: string;
-}
+import { CartItem } from "../../../../models/cart/cart.model";
+import { SubmittedOrderState } from "../../../../models/checkout/order.model";
+import { StripeCardElement } from "../../../../models/checkout/stripe.model";
+import { CollectionProduct } from "../../../../models/product/collection-product.model";
 
 @Component({
   selector: "app-checkout-page",

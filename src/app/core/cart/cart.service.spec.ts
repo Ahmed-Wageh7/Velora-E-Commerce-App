@@ -4,11 +4,13 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../auth/auth.service';
-import { CartApiItem, CartApiService } from './cart-api.service';
+import { CartApiService } from './cart-api.service';
 import { CartService } from './cart.service';
 import { CollectionProductsService } from '../api/collection-products.service';
-import { ProductsService, type Product } from '../api/products.service';
+import { ProductsService } from '../api/products.service';
 import { ToastService } from '../notifications/toast.service';
+import { CartApiItem, CartItem } from '../../models/cart/cart.model';
+import { Product } from '../../models/product/product.model';
 
 describe('CartService', () => {
   const storageKey = 'veloura-cart-items';
@@ -144,7 +146,7 @@ describe('CartService', () => {
     const removed = await service.removeItemWithApi({
       id: 'line-1',
       detailProductId: 'product-1',
-    });
+    } as CartItem);
 
     expect(removed).toBe(true);
     expect(cartApiServiceStub.removeItem).toHaveBeenCalledWith('product-1');
@@ -156,12 +158,14 @@ describe('CartService', () => {
     authState.set(true);
     const service = TestBed.inject(CartService);
     const originalServerItem: CartApiItem = {
-      id: 'line-1',
-      detailProductId: 'product-1',
+      cartItemId: 'line-1',
+      productId: 'product-1',
       name: product.name,
       price: product.price,
       description: product.description,
       image: product.image,
+      coverImage: null,
+      images: [],
       quantity: 1,
       detailFolder: product.detailFolder,
     };
@@ -182,7 +186,7 @@ describe('CartService', () => {
     const removed = await service.removeItemWithApi({
       id: 'line-1',
       detailProductId: 'product-1',
-    });
+    } as CartItem);
 
     expect(removed).toBe(true);
     expect(cartApiServiceStub.removeItem.mock.calls).toEqual([['product-1'], ['line-1']]);

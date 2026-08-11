@@ -2,13 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, throwError } from 'rxjs';
 import {
-  ApiCategoryRef,
-  ApiProductRecord,
-  ApiProductsListResponse,
-  CollectionQuery,
-  ExtractProductsOptions,
-  TaxonomyApiCategory,
-  TaxonomyApiResponse,
   buildCategoriesUrl,
   buildProductsByCategoryUrl,
   buildProductsBySubcategoryUrl,
@@ -19,6 +12,15 @@ import {
   getSubcategoryIdByName,
   normalizeLabel,
 } from './product-api.utils';
+import { CollectionQuery } from '../../models/product/collection-product.model';
+import {
+  ApiCategoryRef,
+  ApiProductRecord,
+  ApiProductsListResponse,
+  ExtractProductsOptions,
+  TaxonomyApiResponse,
+} from '../../models/product/product-api.model';
+import { TaxonomyApiCategory } from '../../models/taxonomy/taxonomy.model';
 
 @Injectable({
   providedIn: 'root',

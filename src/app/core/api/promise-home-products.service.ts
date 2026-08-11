@@ -1,25 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
-import { ApiProductRecord, getProductId, getProductOriginalPrice, getProductQuantity, getPrimaryImageUrl } from './product-api.utils';
+import { getProductId, getProductOriginalPrice, getProductQuantity, getPrimaryImageUrl } from './product-api.utils';
 import { ProductCollectionsService } from './product-collections.service';
-
-interface PromiseHomeProductApiRecord extends ApiProductRecord {
-  title?: string;
-  badge?: string;
-  detail?: string;
-}
-
-export interface PromiseHomeProduct {
-  id: string;
-  title: string;
-  badge: string;
-  name: string;
-  detail: string;
-  price: number;
-  originalPrice: number;
-  quantity: number;
-  imageUrl: string;
-}
+import { PromiseHomeProduct, PromiseHomeProductApiRecord } from '../../models/product/home-product.model';
 
 @Injectable({
   providedIn: 'root',

@@ -1,27 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-
-export interface ToastProductPreview {
-  name: string;
-  image: string;
-  price?: number;
-  quantity?: number;
-}
-
-export interface ToastMessage {
-  id: number;
-  title: string;
-  message: string;
-  type: 'success' | 'error' | 'info' | 'cart';
-  duration: number;
-  visible: boolean;
-  paused: boolean;
-  remaining: number;
-  startedAt: number;
-  product?: ToastProductPreview;
-  replaceGroup?: 'cart';
-}
-
-type ToastInput = Pick<ToastMessage, 'title' | 'message' | 'type' | 'duration' | 'product' | 'replaceGroup'>;
+import { ToastInput, ToastMessage, ToastProductPreview } from '../../models/notification/toast.model';
 
 @Injectable({
   providedIn: 'root',

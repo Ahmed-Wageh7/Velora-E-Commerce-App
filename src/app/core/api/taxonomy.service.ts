@@ -1,15 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, shareReplay } from 'rxjs';
-import { TaxonomyApiCategory, TaxonomyApiSubcategory, TaxonomyApiResponse, buildCategoriesUrl, extractCategories } from './product-api.utils';
-
-export interface NavLinkItem {
-  id: string;
-  label: string;
-  slug: string;
-  route: string;
-  children: NavLinkItem[];
-}
+import { buildCategoriesUrl, extractCategories } from './product-api.utils';
+import { TaxonomyApiResponse } from '../../models/product/product-api.model';
+import { NavLinkItem, TaxonomyApiCategory, TaxonomyApiSubcategory } from '../../models/taxonomy/taxonomy.model';
 
 @Injectable({
   providedIn: 'root',
