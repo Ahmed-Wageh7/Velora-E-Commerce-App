@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { delay, map, of, switchMap } from 'rxjs';
@@ -14,6 +14,7 @@ import { toRequestState } from '../../../../core/utils/request-state';
 import { RequestState } from '../../../../models/common/request-state.model';
 import { LocalCollectionPageConfig } from '../../../../models/collection/local-collection.model';
 import { ProductListItem } from '../../../../models/product/product-list-item.model';
+import { PRODUCT_SORT_OPTIONS, sortProducts, waitForButtonFeedback } from '../../components/shared/product-collection-ui';
 
 @Component({
   selector: 'app-local-collection-gallery-page',
@@ -22,7 +23,6 @@ import { ProductListItem } from '../../../../models/product/product-list-item.mo
   styleUrl: './local-collection-gallery.scss',
 })
 export class LocalCollectionGalleryPageComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
   private readonly productListingService = inject(ProductListingService);
@@ -31,7 +31,7 @@ export class LocalCollectionGalleryPageComponent {
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
   private readonly pageSize = 12;
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   private readonly slug = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('slug') ?? '')),
     { initialValue: this.route.snapshot.paramMap.get('slug') ?? '' },
@@ -45,7 +45,7 @@ export class LocalCollectionGalleryPageComponent {
     { initialValue: this.route.snapshot.paramMap.get('categoryId') ?? '' },
   );
 
-  protected readonly sortOptions = ['Our Suggestions', 'Newest', 'Price: Low to High', 'Price: High to Low'];
+  protected readonly sortOptions = PRODUCT_SORT_OPTIONS;
   private readonly apiCollection = toSignal(
     this.route.paramMap.pipe(
       switchMap((params) => {
@@ -98,9 +98,9 @@ export class LocalCollectionGalleryPageComponent {
 
     return null;
   });
-  protected readonly selectedSort = signal(this.sortOptions[0]);
+  protected readonly selectedSort = signal<string>(this.sortOptions[0]);
   protected readonly visibleCount = signal(this.pageSize);
-  protected isShowingMore = false;
+  protected readonly isShowingMore = signal(false);
   protected readonly heroImageUrl = computed(() => this.collection()?.heroImageFile ?? null);
   private readonly productsState = toSignal(
     this.route.paramMap.pipe(
@@ -177,7 +177,7 @@ export class LocalCollectionGalleryPageComponent {
     return this.productsState();
   });
   protected readonly products = computed(() => {
-    return this.getSortedProducts(this.collectionState().data).slice(0, this.visibleCount());
+    return sortProducts(this.collectionState().data, this.selectedSort()).slice(0, this.visibleCount());
   });
   protected readonly totalProducts = computed(() => this.collectionState().data.length);
   protected readonly isNewCovenantPage = computed(() => this.slug() === 'the-new-covenant-2026');
@@ -214,17 +214,15 @@ export class LocalCollectionGalleryPageComponent {
   }
 
   protected showMore(): void {
-    if (this.isShowingMore) {
+    if (this.isShowingMore()) {
       return;
     }
 
-    this.isShowingMore = true;
-    this.changeDetectorRef.detectChanges();
+    this.isShowingMore.set(true);
 
     window.setTimeout(() => {
       this.visibleCount.update((current) => current + this.pageSize);
-      this.isShowingMore = false;
-      this.changeDetectorRef.detectChanges();
+      this.isShowingMore.set(false);
     }, 240);
   }
 
@@ -242,7 +240,7 @@ export class LocalCollectionGalleryPageComponent {
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected formatPrice(price: number): string {
@@ -261,8 +259,7 @@ export class LocalCollectionGalleryPageComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -279,7 +276,7 @@ export class LocalCollectionGalleryPageComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(trigger, product.primaryImageUrl),
       ]);
       this.toastService.showAddedToCart({
@@ -289,28 +286,12 @@ export class LocalCollectionGalleryPageComponent {
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
-  }
-
-  private getSortedProducts(products: ProductListItem[]): ProductListItem[] {
-    const sortedProducts = [...products];
-
-    switch (this.selectedSort()) {
-      case 'Newest':
-        return sortedProducts.sort((left, right) => right.id.localeCompare(left.id));
-      case 'Price: Low to High':
-        return sortedProducts.sort((left, right) => left.price - right.price);
-      case 'Price: High to Low':
-        return sortedProducts.sort((left, right) => right.price - left.price);
-      default:
-        return sortedProducts.sort((left, right) => left.id.localeCompare(right.id));
-    }
-  }
-
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
   }
 
   private toCollectionConfig(title: string, folder: string): LocalCollectionPageConfig {

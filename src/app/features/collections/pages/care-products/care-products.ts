@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
@@ -8,6 +8,7 @@ import { ToastService } from '../../../../core/notifications/toast.service';
 import { SiteNavbar } from '../../../../layout/site-navbar/site-navbar';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { CareProduct } from '../../../../models/product/home-product.model';
+import { PRODUCT_SORT_OPTIONS, sortProducts, waitForButtonFeedback } from '../../components/shared/product-collection-ui';
 
 @Component({
   selector: 'app-care-products-page',
@@ -16,18 +17,17 @@ import { CareProduct } from '../../../../models/product/home-product.model';
   styleUrl: './care-products.scss',
 })
 export class CareProductsPageComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly careProductsService = inject(CareProductsService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
   private readonly pageSize = 15;
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   protected readonly detailsFolder = 'care';
-  protected isShowingMore = false;
+  protected readonly isShowingMore = signal(false);
 
-  protected readonly sortOptions = ['Our Suggestions', 'Newest', 'Price: Low to High', 'Price: High to Low'];
-  protected selectedSort = this.sortOptions[0];
+  protected readonly sortOptions = PRODUCT_SORT_OPTIONS;
+  protected readonly selectedSort = signal<string>(this.sortOptions[0]);
   protected readonly careProductsState = toSignal(
     toRequestState(this.careProductsService.getCareProducts(), {
       initialData: [] as CareProduct[],
@@ -43,7 +43,11 @@ export class CareProductsPageComponent {
       },
     },
   );
-  protected visibleCount = this.pageSize;
+  protected readonly visibleCount = signal(this.pageSize);
+  protected readonly visibleProducts = computed(() =>
+    sortProducts(this.careProductsState().data, this.selectedSort()).slice(0, this.visibleCount()),
+  );
+  protected readonly canShowMore = computed(() => this.visibleCount() < this.careProductsState().data.length);
 
   protected trackByName(_: number, product: CareProduct): string {
     return `${product.id}`;
@@ -54,46 +58,27 @@ export class CareProductsPageComponent {
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected formatPrice(price: number): string {
     return `${price} ﷼`;
   }
 
-  protected getVisibleProducts(products: CareProduct[]): CareProduct[] {
-    return this.getSortedProducts(products).slice(0, this.visibleCount);
-  }
-
-  protected canShowMore(products: CareProduct[]): boolean {
-    return this.visibleCount < this.getSortedProducts(products).length;
-  }
-
   protected async showMore(): Promise<void> {
-    this.isShowingMore = true;
-    await this.waitForButtonFeedback();
-    this.visibleCount += this.pageSize;
-    this.isShowingMore = false;
+    if (this.isShowingMore()) {
+      return;
+    }
+
+    this.isShowingMore.set(true);
+    await waitForButtonFeedback();
+    this.visibleCount.update((count) => count + this.pageSize);
+    this.isShowingMore.set(false);
   }
 
   protected updateSort(value: string): void {
-    this.selectedSort = value;
-    this.visibleCount = this.pageSize;
-  }
-
-  private getSortedProducts(products: CareProduct[]): CareProduct[] {
-    const sortedProducts = [...products];
-
-    switch (this.selectedSort) {
-      case 'Newest':
-        return sortedProducts.sort((left, right) => right.id.localeCompare(left.id));
-      case 'Price: Low to High':
-        return sortedProducts.sort((left, right) => left.price - right.price);
-      case 'Price: High to Low':
-        return sortedProducts.sort((left, right) => right.price - left.price);
-      default:
-        return sortedProducts.sort((left, right) => left.id.localeCompare(right.id));
-    }
+    this.selectedSort.set(value);
+    this.visibleCount.set(this.pageSize);
   }
 
   protected async addToCart(product: CareProduct, event: MouseEvent): Promise<void> {
@@ -102,8 +87,7 @@ export class CareProductsPageComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -120,7 +104,7 @@ export class CareProductsPageComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(trigger, product.primaryImageUrl),
       ]);
       this.toastService.showAddedToCart({
@@ -130,12 +114,11 @@ export class CareProductsPageComponent {
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
-  }
-
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
   }
 }

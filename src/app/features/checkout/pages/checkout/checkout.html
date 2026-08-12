@@ -3,7 +3,7 @@
 
   <main class="checkout-main">
     <section class="checkout-shell">
-      @if (submittedOrder) {
+      @if (submittedOrder(); as submittedOrder) {
       <section class="checkout-feedback checkout-feedback--success" aria-live="polite">
         <div>
           <p class="checkout-feedback-kicker">Order submitted</p>
@@ -42,7 +42,7 @@
               type="button"
               class="action-button checkout-remove checkout-remove-top"
               [class.is-loading]="isProcessingItem(item.id, 'remove')"
-              [disabled]="activeLineItemAction !== null || isCheckoutBusy"
+              [disabled]="activeLineItemAction() !== null || isCheckoutBusy()"
               (click)="remove(item)"
               aria-label="Remove item"
             >
@@ -85,7 +85,7 @@
                   type="button"
                   class="action-button quantity-chip-button"
                   [class.quantity-chip-button--busy]="isProcessingItem(item.id, 'decrease')"
-                  [disabled]="activeLineItemAction !== null || isCheckoutBusy"
+                  [disabled]="activeLineItemAction() !== null || isCheckoutBusy()"
                   (click)="decrease(item)"
                 >
                   @if (isProcessingItem(item.id, 'decrease')) {
@@ -101,7 +101,7 @@
                   type="button"
                   class="action-button quantity-chip-button"
                   [class.quantity-chip-button--busy]="isProcessingItem(item.id, 'increase')"
-                  [disabled]="activeLineItemAction !== null || isCheckoutBusy"
+                  [disabled]="activeLineItemAction() !== null || isCheckoutBusy()"
                   (click)="increase(item)"
                 >
                   @if (isProcessingItem(item.id, 'increase')) {
@@ -166,26 +166,26 @@
                 <div
                   #stripeCardElement
                   class="checkout-stripe-card"
-                  [class.checkout-stripe-card--ready]="isStripeCardReady"
+                  [class.checkout-stripe-card--ready]="isStripeCardReady()"
                 ></div>
               </label>
-              @if (cardErrorMessage) {
-              <p class="checkout-submit-error" aria-live="assertive">{{ cardErrorMessage }}</p>
+              @if (cardErrorMessage()) {
+              <p class="checkout-submit-error" aria-live="assertive">{{ cardErrorMessage() }}</p>
               }
             </div>
 
-            @if (orderErrorMessage) {
-            <p class="checkout-submit-error" aria-live="assertive">{{ orderErrorMessage }}</p>
+            @if (orderErrorMessage()) {
+            <p class="checkout-submit-error" aria-live="assertive">{{ orderErrorMessage() }}</p>
             }
 
             <button
               type="submit"
               class="action-button checkout-confirm"
-              [class.is-loading]="isCheckoutBusy"
-              [disabled]="isCheckoutBusy || activeLineItemAction !== null"
+              [class.is-loading]="isCheckoutBusy()"
+              [disabled]="isCheckoutBusy() || activeLineItemAction() !== null"
             >
               <span class="action-button-label">
-                @if (isCheckoutBusy) {
+                @if (isCheckoutBusy()) {
                 <span class="action-button-spinner" aria-hidden="true"></span>
                 } @else {
                 <span>Pay securely</span>

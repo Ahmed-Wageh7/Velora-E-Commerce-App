@@ -166,7 +166,7 @@ const NAV_ITEM_ORDER: Record<string, number> = {
   'buy-1-get-two-free': 2,
   'assaf-discounts': 3,
   'veloura-discounts': 3,
-  perfumes: 4,
+  'perfumes': 4,
   'assaf-watches': 5,
   'veloura-watches': 5,
   'care-products': 6,

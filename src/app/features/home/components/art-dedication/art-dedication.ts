@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
@@ -7,6 +7,7 @@ import { ArtDedicationService } from '../../../../core/api/art-dedication.servic
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { ArtDedicationProduct } from '../../../../models/product/home-product.model';
+import { waitForButtonFeedback } from '../../../collections/components/shared/product-collection-ui';
 
 @Component({
   selector: 'app-art-dedication',
@@ -15,12 +16,11 @@ import { ArtDedicationProduct } from '../../../../models/product/home-product.mo
   styleUrl: './art-dedication.scss',
 })
 export class ArtDedicationComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly artDedicationService = inject(ArtDedicationService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   protected readonly detailsFolder = 'The-Art-Dedication';
 
   protected readonly productsState = toSignal(
@@ -52,7 +52,7 @@ export class ArtDedicationComponent {
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected async addToCart(product: ArtDedicationProduct, event: MouseEvent): Promise<void> {
@@ -61,8 +61,7 @@ export class ArtDedicationComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -79,7 +78,7 @@ export class ArtDedicationComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(trigger, product.imageUrl),
       ]);
       this.toastService.showAddedToCart({
@@ -89,12 +88,11 @@ export class ArtDedicationComponent {
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
-  }
-
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
   }
 }

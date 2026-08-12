@@ -19,7 +19,7 @@
         <label class="care-sort">
           <span>Sort By</span>
           <span class="sort-select-wrap">
-            <select class="care-sort-select" [value]="selectedSort" (change)="updateSort($any($event.target).value)">
+            <select class="care-sort-select" [value]="selectedSort()" (change)="updateSort($any($event.target).value)">
             @for (option of sortOptions; track option) {
             <option [value]="option">{{ option }}</option>
             }
@@ -50,7 +50,7 @@
       </div>
       } @else {
       <section class="care-grid" aria-label="Care products list">
-        @for (product of getVisibleProducts(careProductsState().data); track trackByName($index, product)) {
+        @for (product of visibleProducts(); track trackByName($index, product)) {
         <article class="care-card">
           <a class="product-card-link" [routerLink]="['/product', product.id]">
             <div class="care-card-image-wrap media-hover-frame" [class.has-hover-image]="!!product.coverImageUrl">
@@ -98,17 +98,17 @@
         }
       </section>
 
-      @if (canShowMore(careProductsState().data)) {
+      @if (canShowMore()) {
       <div class="care-load-more">
         <button
           class="care-load-more-button action-button"
           type="button"
-          [class.is-loading]="isShowingMore"
-          [disabled]="isShowingMore"
+          [class.is-loading]="isShowingMore()"
+          [disabled]="isShowingMore()"
           (click)="showMore()"
         >
           <span class="action-button-label">
-            @if (isShowingMore) {
+            @if (isShowingMore()) {
             <span class="action-button-spinner" aria-hidden="true"></span>
             <span>Loading...</span>
             } @else {

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
@@ -7,6 +7,7 @@ import { ProductListingService } from '../../../../core/api/product-listing.serv
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { ProductListItem } from '../../../../models/product/product-list-item.model';
+import { waitForButtonFeedback } from '../../../collections/components/shared/product-collection-ui';
 
 @Component({
   selector: 'app-promise-showcase',
@@ -15,12 +16,11 @@ import { ProductListItem } from '../../../../models/product/product-list-item.mo
   styleUrl: './promise-showcase.scss',
 })
 export class PromiseShowcaseComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   protected readonly detailsFolder = 'promise-bags';
   private readonly promiseBagsSubcategoryId = '69d4fe299e39253830600a70';
 
@@ -56,7 +56,7 @@ export class PromiseShowcaseComponent {
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
@@ -65,8 +65,7 @@ export class PromiseShowcaseComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -83,7 +82,7 @@ export class PromiseShowcaseComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(trigger, product.primaryImageUrl),
       ]);
       this.toastService.showAddedToCart({
@@ -93,12 +92,11 @@ export class PromiseShowcaseComponent {
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
-  }
-
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
   }
 }

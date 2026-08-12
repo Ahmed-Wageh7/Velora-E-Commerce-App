@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { CartAnimationService } from '../../../../core/cart/cart-animation.service';
@@ -7,6 +7,7 @@ import { ProductListingService } from '../../../../core/api/product-listing.serv
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { ProductListItem } from '../../../../models/product/product-list-item.model';
+import { waitForButtonFeedback } from '../../../collections/components/shared/product-collection-ui';
 
 @Component({
   selector: 'app-frankel-collection-section',
@@ -15,12 +16,11 @@ import { ProductListItem } from '../../../../models/product/product-list-item.mo
   styleUrl: './frankel-collection-section.scss',
 })
 export class FrankelCollectionSectionComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   private readonly subcategoryId = '69d506d49e39253830600ace';
   protected readonly detailsFolder = 'category-frankel';
 
@@ -45,13 +45,10 @@ export class FrankelCollectionSectionComponent {
       },
     },
   );
+  protected readonly visibleProducts = computed(() => this.productsState().data.slice(0, 6));
 
   protected trackById(_: number, product: ProductListItem): string {
     return `${product.id}`;
-  }
-
-  protected getVisibleProducts(products: ProductListItem[]): ProductListItem[] {
-    return products.slice(0, 6);
   }
 
   protected formatPrice(price: number): string {
@@ -63,7 +60,7 @@ export class FrankelCollectionSectionComponent {
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
@@ -72,8 +69,7 @@ export class FrankelCollectionSectionComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -90,7 +86,7 @@ export class FrankelCollectionSectionComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(trigger, product.primaryImageUrl),
       ]);
 
@@ -101,12 +97,11 @@ export class FrankelCollectionSectionComponent {
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
-  }
-
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
   }
 }

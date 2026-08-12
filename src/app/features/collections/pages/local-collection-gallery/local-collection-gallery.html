@@ -261,12 +261,12 @@
         <button
           class="collection-gallery-load-more-button action-button"
           type="button"
-          [class.is-loading]="isShowingMore"
-          [disabled]="isShowingMore"
+          [class.is-loading]="isShowingMore()"
+          [disabled]="isShowingMore()"
           (click)="showMore()"
         >
           <span class="action-button-label">
-            @if (isShowingMore) {
+            @if (isShowingMore()) {
             <span class="action-button-spinner" aria-hidden="true"></span>
             }
             <span>Load More</span>

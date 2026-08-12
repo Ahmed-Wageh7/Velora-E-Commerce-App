@@ -15,7 +15,7 @@
             />
           </svg>
         </span>
-        <span>Veloura Bags</span>
+        <span>{{ breadcrumbParent() }}</span>
         <span class="breadcrumb-separator" aria-hidden="true">
           <svg viewBox="0 0 16 16" fill="none">
             <path
@@ -30,13 +30,13 @@
       </nav>
 
       @if (hasHero()) {
-        <section class="frankel-hero" [class.frankel-hero-full-width]="fullWidthHero()">
+        <section class="frankel-hero" [class.frankel-hero-full-width]="isHeroFullWidth()">
           <img
             [src]="heroImageUrl()"
             [alt]="breadcrumbLabel()"
             class="frankel-hero-image"
-            [class.frankel-hero-image-full-width]="fullWidthHero()"
-            [class.frankel-hero-image-actual-full-width]="fullWidthHero()"
+            [class.frankel-hero-image-full-width]="isHeroFullWidth()"
+            [class.frankel-hero-image-actual-full-width]="isHeroFullWidth()"
           />
         </section>
       }
@@ -49,7 +49,7 @@
           <span class="sort-select-wrap">
             <select
               class="frankel-sort-select"
-              [value]="selectedSort"
+              [value]="selectedSort()"
               (change)="updateSort($any($event.target).value)"
             >
               @for (option of sortOptions; track option) {
@@ -70,9 +70,14 @@
         </label>
       </div>
 
-      @if (bagProducts$ | async; as bagProducts) {
+      @if (productsState().status === 'loading') {
+        <div class="loading-panel">
+          <span class="loading-panel-spinner" aria-hidden="true"></span>
+          <span>{{ productsState().message }}</span>
+        </div>
+      } @else {
         <section class="frankel-grid" [attr.aria-label]="breadcrumbLabel() + ' products list'">
-          @for (product of getVisibleProducts(bagProducts); track trackById($index, product)) {
+          @for (product of visibleProducts(); track trackById($index, product)) {
             <article
               class="frankel-card"
               [class.care-card]="useCareShimmer()"
@@ -138,17 +143,17 @@
           }
         </section>
 
-        @if (canShowMore(bagProducts)) {
+        @if (canShowMore()) {
           <div class="frankel-load-more">
             <button
               class="frankel-load-more-button action-button"
               type="button"
-              [class.is-loading]="isShowingMore"
-              [disabled]="isShowingMore"
+              [class.is-loading]="isShowingMore()"
+              [disabled]="isShowingMore()"
               (click)="showMore()"
             >
               <span class="action-button-label">
-                @if (isShowingMore) {
+                @if (isShowingMore()) {
                   <span class="action-button-spinner" aria-hidden="true"></span>
                 }
                 <span>Load More</span>
@@ -156,11 +161,6 @@
             </button>
           </div>
         }
-      } @else {
-        <div class="loading-panel">
-          <span class="loading-panel-spinner" aria-hidden="true"></span>
-          <span>Loading products...</span>
-        </div>
       }
     </div>
   </main>

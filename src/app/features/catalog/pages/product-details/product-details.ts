@@ -1,5 +1,4 @@
 import {
-  ChangeDetectorRef,
   Component,
   ElementRef,
   computed,
@@ -20,6 +19,7 @@ import { ToastService } from "../../../../core/notifications/toast.service";
 import { SiteNavbar } from "../../../../layout/site-navbar/site-navbar";
 import { RequestState } from "../../../../models/common/request-state.model";
 import { ProductDetails } from "../../../../models/product/product-details.model";
+import { waitForButtonFeedback } from "../../../collections/components/shared/product-collection-ui";
 
 @Component({
   selector: "app-product-details-page",
@@ -28,14 +28,13 @@ import { ProductDetails } from "../../../../models/product/product-details.model
   styleUrl: "./product-details.scss",
 })
 export class ProductDetailsPageComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly productDetailsService = inject(ProductDetailsService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
-  protected isAddingToCart = false;
+  protected readonly isAddingToCart = signal(false);
   protected readonly selectedQuantity = signal(1);
   protected readonly selectedImage = signal("");
   protected readonly previewImage = signal<string | null>(null);
@@ -118,8 +117,7 @@ export class ProductDetailsPageComponent {
       return;
     }
 
-    this.isAddingToCart = true;
-    this.changeDetectorRef.detectChanges();
+    this.isAddingToCart.set(true);
 
     try {
       const quantity = this.selectedQuantity();
@@ -142,7 +140,7 @@ export class ProductDetailsPageComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromSource(
           this.activeProductImageRef()?.nativeElement ?? null,
           this.getActiveImage(product),
@@ -155,8 +153,7 @@ export class ProductDetailsPageComponent {
         quantity,
       });
     } finally {
-      this.isAddingToCart = false;
-      this.changeDetectorRef.detectChanges();
+      this.isAddingToCart.set(false);
     }
   }
 
@@ -245,7 +242,4 @@ export class ProductDetailsPageComponent {
       .replace(/\b\w/g, (character) => character.toUpperCase());
   }
 
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
-  }
 }

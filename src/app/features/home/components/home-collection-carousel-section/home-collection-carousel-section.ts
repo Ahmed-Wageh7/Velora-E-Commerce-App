@@ -1,6 +1,5 @@
 import {
   AfterViewInit,
-  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
@@ -9,6 +8,7 @@ import {
   computed,
   inject,
   input,
+  signal,
 } from "@angular/core";
 import { isPlatformBrowser } from "@angular/common";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
@@ -20,6 +20,7 @@ import { ProductListingService } from "../../../../core/api/product-listing.serv
 import { ToastService } from "../../../../core/notifications/toast.service";
 import { toRequestState } from "../../../../core/utils/request-state";
 import { ProductListItem } from "../../../../models/product/product-list-item.model";
+import { waitForButtonFeedback } from "../../../collections/components/shared/product-collection-ui";
 
 @Component({
   selector: "app-home-collection-carousel-section",
@@ -30,7 +31,6 @@ import { ProductListItem } from "../../../../models/product/product-list-item.mo
 export class HomeCollectionCarouselSectionComponent
   implements AfterViewInit, OnDestroy
 {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly productListingService = inject(
     ProductListingService,
@@ -38,7 +38,7 @@ export class HomeCollectionCarouselSectionComponent
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   private autoScrollIntervalId: ReturnType<typeof setInterval> | null = null;
 
   @ViewChild("viewport") private viewportRef?: ElementRef<HTMLElement>;
@@ -103,7 +103,7 @@ export class HomeCollectionCarouselSectionComponent
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected pauseAutoScroll(): void {
@@ -132,8 +132,7 @@ export class HomeCollectionCarouselSectionComponent
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -150,7 +149,7 @@ export class HomeCollectionCarouselSectionComponent
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(
           trigger,
           product.primaryImageUrl,
@@ -164,8 +163,11 @@ export class HomeCollectionCarouselSectionComponent
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
   }
 
@@ -215,7 +217,4 @@ export class HomeCollectionCarouselSectionComponent
     }, 6000);
   }
 
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
-  }
 }

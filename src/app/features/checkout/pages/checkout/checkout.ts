@@ -2,10 +2,10 @@ import {
   ElementRef,
   OnDestroy,
   ViewChild,
-  ChangeDetectorRef,
   Component,
   computed,
   inject,
+  signal,
 } from "@angular/core";
 import { CurrencyPipe } from "@angular/common";
 import {
@@ -36,7 +36,6 @@ import { ProductListItem } from "../../../../models/product/product-list-item.mo
   styleUrl: "./checkout.scss",
 })
 export class CheckoutPageComponent implements OnDestroy {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
@@ -47,14 +46,15 @@ export class CheckoutPageComponent implements OnDestroy {
   private readonly productsService = inject(ProductsService);
   private readonly stripePaymentService = inject(StripePaymentService);
   private readonly toastService = inject(ToastService);
-  protected activeLineItemId: string | null = null;
-  protected activeLineItemAction: "increase" | "decrease" | "remove" | null =
-    null;
-  protected isSubmittingOrder = false;
-  protected orderErrorMessage = "";
-  protected cardErrorMessage = "";
-  protected isStripeCardReady = false;
-  protected submittedOrder: SubmittedOrderState | null = null;
+  protected readonly activeLineItemId = signal<string | null>(null);
+  protected readonly activeLineItemAction = signal<
+    "increase" | "decrease" | "remove" | null
+  >(null);
+  protected readonly isSubmittingOrder = signal(false);
+  protected readonly orderErrorMessage = signal("");
+  protected readonly cardErrorMessage = signal("");
+  protected readonly isStripeCardReady = signal(false);
+  protected readonly submittedOrder = signal<SubmittedOrderState | null>(null);
   private stripeCard: StripeCardElement | null = null;
   private stripeCardContainer: ElementRef<HTMLElement> | null = null;
   private stripeCardMountPromise: Promise<void> | null = null;
@@ -108,9 +108,7 @@ export class CheckoutPageComponent implements OnDestroy {
     this.stripeCard = null;
   }
 
-  protected get isCheckoutBusy(): boolean {
-    return this.isSubmittingOrder;
-  }
+  protected readonly isCheckoutBusy = computed(() => this.isSubmittingOrder());
 
   protected async openProductDetails(
     item: CartItem,
@@ -136,15 +134,14 @@ export class CheckoutPageComponent implements OnDestroy {
     action: "increase" | "decrease" | "remove",
   ): boolean {
     return (
-      this.activeLineItemId === productId &&
-      this.activeLineItemAction === action
+      this.activeLineItemId() === productId &&
+      this.activeLineItemAction() === action
     );
   }
 
   protected async increase(item: CartItem): Promise<void> {
-    this.activeLineItemId = item.id;
-    this.activeLineItemAction = "increase";
-    this.changeDetectorRef.detectChanges();
+    this.activeLineItemId.set(item.id);
+    this.activeLineItemAction.set("increase");
     const updated = await this.cartService.updateQuantityWithApi(
       item,
       item.quantity + 1,
@@ -162,9 +159,8 @@ export class CheckoutPageComponent implements OnDestroy {
   }
 
   protected async decrease(item: CartItem): Promise<void> {
-    this.activeLineItemId = item.id;
-    this.activeLineItemAction = "decrease";
-    this.changeDetectorRef.detectChanges();
+    this.activeLineItemId.set(item.id);
+    this.activeLineItemAction.set("decrease");
     const nextQuantity = item.quantity - 1;
     const updated = await this.cartService.updateQuantityWithApi(
       item,
@@ -182,9 +178,8 @@ export class CheckoutPageComponent implements OnDestroy {
   }
 
   protected async remove(item: CartItem): Promise<void> {
-    this.activeLineItemId = item.id;
-    this.activeLineItemAction = "remove";
-    this.changeDetectorRef.detectChanges();
+    this.activeLineItemId.set(item.id);
+    this.activeLineItemAction.set("remove");
     const removed = await this.cartService.removeItemWithApi(item);
     this.clearLineItemState();
 
@@ -199,7 +194,7 @@ export class CheckoutPageComponent implements OnDestroy {
   }
 
   protected async confirmPurchase(): Promise<void> {
-    if (this.isCheckoutBusy) {
+    if (this.isCheckoutBusy()) {
       return;
     }
 
@@ -226,8 +221,8 @@ export class CheckoutPageComponent implements OnDestroy {
     }
 
     this.orderForm.markAllAsTouched();
-    this.orderErrorMessage = "";
-    this.cardErrorMessage = "";
+    this.orderErrorMessage.set("");
+    this.cardErrorMessage.set("");
 
     if (this.orderForm.invalid) {
       this.toastService.show(
@@ -242,21 +237,21 @@ export class CheckoutPageComponent implements OnDestroy {
     await this.mountStripeCard();
 
     if (!this.stripeCard) {
-      this.orderErrorMessage =
-        this.cardErrorMessage ||
-        "Card payment is not ready yet. Please check your Stripe setup.";
+      this.orderErrorMessage.set(
+        this.cardErrorMessage() ||
+          "Card payment is not ready yet. Please check your Stripe setup.",
+      );
       this.toastService.show(
         "Payment is not ready",
-        this.orderErrorMessage,
+        this.orderErrorMessage(),
         "error",
         2600,
       );
       return;
     }
 
-    this.isSubmittingOrder = true;
-    this.submittedOrder = null;
-    this.changeDetectorRef.detectChanges();
+    this.isSubmittingOrder.set(true);
+    this.submittedOrder.set(null);
 
     try {
       const formValue = this.orderForm.getRawValue();
@@ -267,7 +262,7 @@ export class CheckoutPageComponent implements OnDestroy {
       const result = await this.ordersApiService.checkout(payload);
 
       if (!result.ok) {
-        this.orderErrorMessage = result.error;
+        this.orderErrorMessage.set(result.error);
         this.toastService.show(
           "Could not submit order",
           result.error,
@@ -280,11 +275,12 @@ export class CheckoutPageComponent implements OnDestroy {
       const orderId = result.order?.id;
 
       if (!orderId) {
-        this.orderErrorMessage =
-          "The backend created the order but did not return an order ID for Stripe.";
+        this.orderErrorMessage.set(
+          "The backend created the order but did not return an order ID for Stripe.",
+        );
         this.toastService.show(
           "Could not start payment",
-          this.orderErrorMessage,
+          this.orderErrorMessage(),
           "error",
           2600,
         );
@@ -295,7 +291,7 @@ export class CheckoutPageComponent implements OnDestroy {
         await this.ordersApiService.createStripePaymentIntent(orderId);
 
       if (!intentResult.ok) {
-        this.orderErrorMessage = intentResult.error;
+        this.orderErrorMessage.set(intentResult.error);
         this.toastService.show(
           "Could not start payment",
           intentResult.error,
@@ -316,8 +312,8 @@ export class CheckoutPageComponent implements OnDestroy {
       );
 
       if (!paymentResult.ok) {
-        this.orderErrorMessage = paymentResult.error;
-        this.cardErrorMessage = paymentResult.error;
+        this.orderErrorMessage.set(paymentResult.error);
+        this.cardErrorMessage.set(paymentResult.error);
         this.toastService.show(
           "Payment failed",
           paymentResult.error,
@@ -327,14 +323,14 @@ export class CheckoutPageComponent implements OnDestroy {
         return;
       }
 
-      this.submittedOrder = {
+      this.submittedOrder.set({
         id: result.order?.id ?? null,
         status: "paid",
         paymentMethod: "card",
         shippingAddress:
           result.order?.shippingAddress ?? payload.shippingAddress,
         message: "Payment completed successfully and your order was submitted.",
-      };
+      });
 
       this.cartService.clearCart();
       this.toastService.show(
@@ -344,8 +340,7 @@ export class CheckoutPageComponent implements OnDestroy {
         2200,
       );
     } finally {
-      this.isSubmittingOrder = false;
-      this.changeDetectorRef.detectChanges();
+      this.isSubmittingOrder.set(false);
     }
   }
 
@@ -364,27 +359,24 @@ export class CheckoutPageComponent implements OnDestroy {
       return this.stripeCardMountPromise;
     }
 
-    this.cardErrorMessage = "";
+    this.cardErrorMessage.set("");
     this.stripeCardMountPromise = this.stripePaymentService
       .createCardElement(container)
       .then((card) => {
         this.stripeCard = card;
-        this.isStripeCardReady = true;
+        this.isStripeCardReady.set(true);
         card.on("change", (event) => {
-          this.cardErrorMessage = event.error?.message ?? "";
-          this.changeDetectorRef.detectChanges();
+          this.cardErrorMessage.set(event.error?.message ?? "");
         });
       })
       .catch((error: unknown) => {
-        this.isStripeCardReady = false;
-        this.cardErrorMessage = this.readErrorMessage(
-          error,
-          "Could not initialize Stripe payments.",
+        this.isStripeCardReady.set(false);
+        this.cardErrorMessage.set(
+          this.readErrorMessage(error, "Could not initialize Stripe payments."),
         );
       })
       .finally(() => {
         this.stripeCardMountPromise = null;
-        this.changeDetectorRef.detectChanges();
       });
 
     return this.stripeCardMountPromise;
@@ -396,9 +388,8 @@ export class CheckoutPageComponent implements OnDestroy {
   }
 
   private clearLineItemState(): void {
-    this.activeLineItemId = null;
-    this.activeLineItemAction = null;
-    this.changeDetectorRef.detectChanges();
+    this.activeLineItemId.set(null);
+    this.activeLineItemAction.set(null);
   }
 
   private async resolveProductRoute(

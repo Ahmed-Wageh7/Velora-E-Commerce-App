@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { of, switchMap } from 'rxjs';
@@ -9,6 +9,7 @@ import { TaxonomyService } from '../../../../core/api/taxonomy.service';
 import { ToastService } from '../../../../core/notifications/toast.service';
 import { toRequestState } from '../../../../core/utils/request-state';
 import { ProductListItem } from '../../../../models/product/product-list-item.model';
+import { waitForButtonFeedback } from '../../../collections/components/shared/product-collection-ui';
 
 @Component({
   selector: 'app-collection-banner-section',
@@ -17,13 +18,12 @@ import { ProductListItem } from '../../../../models/product/product-list-item.mo
   styleUrl: './collection-banner-section.scss',
 })
 export class CollectionBannerSectionComponent {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly productListingService = inject(ProductListingService);
   private readonly taxonomyService = inject(TaxonomyService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
-  private readonly loadingProductIds = new Set<string>();
+  private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
 
   readonly bannerImage = input.required<string>();
   readonly bannerAlt = input.required<string>();
@@ -83,7 +83,7 @@ export class CollectionBannerSectionComponent {
   }
 
   protected isAddingToCart(productId: string): boolean {
-    return this.loadingProductIds.has(productId);
+    return this.loadingProductIds().has(productId);
   }
 
   protected async addToCart(product: ProductListItem, event: MouseEvent): Promise<void> {
@@ -92,8 +92,7 @@ export class CollectionBannerSectionComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
-    this.loadingProductIds.add(product.id);
-    this.changeDetectorRef.detectChanges();
+    this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
       const added = await this.cartService.addToCartWithApi({
@@ -110,7 +109,7 @@ export class CollectionBannerSectionComponent {
       }
 
       await Promise.all([
-        this.waitForButtonFeedback(),
+        waitForButtonFeedback(),
         this.cartAnimationService.animateFromTrigger(trigger, product.primaryImageUrl),
       ]);
 
@@ -121,8 +120,11 @@ export class CollectionBannerSectionComponent {
         quantity: 1,
       });
     } finally {
-      this.loadingProductIds.delete(product.id);
-      this.changeDetectorRef.detectChanges();
+      this.loadingProductIds.update((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(product.id);
+        return nextIds;
+      });
     }
   }
 
@@ -163,7 +165,4 @@ export class CollectionBannerSectionComponent {
     return this.title()?.trim() || 'collection';
   }
 
-  private waitForButtonFeedback(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 240));
-  }
 }

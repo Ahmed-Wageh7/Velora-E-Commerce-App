@@ -1,5 +1,5 @@
-<div #navbarShell class="navbar-shell" [class.is-docked]="isNavbarDocked">
-  <nav class="navbar" [class.scrolled]="isScrolled">
+<div #navbarShell class="navbar-shell" [class.is-docked]="isNavbarDocked()">
+  <nav class="navbar" [class.scrolled]="isScrolled()">
     <div class="container flex-between">
       <button class="icon-btn mobile-only mobile-menu-toggle" (click)="toggleMenu()" type="button">
         <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +87,7 @@
       </div>
     </div>
 
-    @if (isSearchModalOpen) {
+    @if (isSearchModalOpen()) {
       <div class="navbar-search-backdrop" (click)="closeSearchModal()"></div>
       <div class="navbar-search-modal" role="dialog" aria-modal="true" aria-labelledby="navbar-search-title">
         <button type="button" class="navbar-search-close" (click)="closeSearchModal()" aria-label="Close search">
@@ -113,7 +113,7 @@
           </label>
 
           <div class="navbar-search-results">
-            @if (isSearchLoading) {
+            @if (isSearchLoading()) {
               <div class="navbar-search-empty">Loading products...</div>
             } @else if (!filteredSearchResults().length) {
               <div class="navbar-search-empty">No products matched your search.</div>
@@ -136,9 +136,9 @@
       </div>
     }
 
-    <div class="mobile-menu-backdrop" [class.open]="isMenuOpen" (click)="closeMenu()"></div>
+    <div class="mobile-menu-backdrop" [class.open]="isMenuOpen()" (click)="closeMenu()"></div>
 
-    <div class="mobile-menu" [class.open]="isMenuOpen">
+    <div class="mobile-menu" [class.open]="isMenuOpen()">
       <div class="mobile-menu-header">
       <span class="mobile-menu-heading">Main Menu</span>
       <button class="icon-btn mobile-menu-close" type="button" (click)="closeMenu()">
@@ -209,4 +209,4 @@
   </nav>
 </div>
 
-<div class="navbar-spacer" [style.height.px]="isNavbarDocked ? navbarSpacerHeight : 0"></div>
+<div class="navbar-spacer" [style.height.px]="isNavbarDocked() ? navbarSpacerHeight() : 0"></div>

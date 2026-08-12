@@ -1,7 +1,6 @@
 import { CommonModule, DOCUMENT } from "@angular/common";
 import {
   afterNextRender,
-  ChangeDetectorRef,
   Component,
   DestroyRef,
   ElementRef,
@@ -33,7 +32,6 @@ import { ProductListItem } from "../../models/product/product-list-item.model";
 })
 export class SiteNavbar {
   private readonly document = inject(DOCUMENT);
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
@@ -50,14 +48,14 @@ export class SiteNavbar {
   @ViewChild("topBar") private topBarRef?: ElementRef<HTMLElement>;
   @ViewChild("navbarShell") private navbarShellRef?: ElementRef<HTMLElement>;
 
-  protected isMenuOpen = false;
-  protected isScrolled = false;
-  protected isNavbarDocked = false;
-  protected navbarSpacerHeight = 0;
-  protected activeMobilePanel = "root";
-  protected isSearchModalOpen = false;
+  protected readonly isMenuOpen = signal(false);
+  protected readonly isScrolled = signal(false);
+  protected readonly isNavbarDocked = signal(false);
+  protected readonly navbarSpacerHeight = signal(0);
+  protected readonly activeMobilePanel = signal("root");
+  protected readonly isSearchModalOpen = signal(false);
   protected readonly currentUser = this.authService.currentUser;
-  protected isSearchLoading = false;
+  protected readonly isSearchLoading = signal(false);
 
   protected readonly navItems = toSignal(this.taxonomyService.getNavItems(), {
     initialValue: [],
@@ -106,7 +104,6 @@ export class SiteNavbar {
     afterNextRender(() => {
       this.updateNavbarMeasurements();
       this.updateNavbarDockState();
-      this.changeDetectorRef.detectChanges();
     });
 
     this.router.events
@@ -115,7 +112,7 @@ export class SiteNavbar {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => {
-        this.isSearchModalOpen = false;
+        this.isSearchModalOpen.set(false);
         this.searchQuery.set("");
         this.searchResults.set([]);
         this.syncBodyOverflow();
@@ -123,34 +120,34 @@ export class SiteNavbar {
   }
 
   protected toggleMenu(): void {
-    this.isMenuOpen = !this.isMenuOpen;
+    this.isMenuOpen.update((isOpen) => !isOpen);
 
-    if (!this.isMenuOpen) {
-      this.activeMobilePanel = "root";
+    if (!this.isMenuOpen()) {
+      this.activeMobilePanel.set("root");
     }
   }
 
   protected closeMenu(): void {
-    this.isMenuOpen = false;
-    this.activeMobilePanel = "root";
+    this.isMenuOpen.set(false);
+    this.activeMobilePanel.set("root");
   }
 
   protected async openSearchModal(): Promise<void> {
-    this.isSearchModalOpen = true;
+    this.isSearchModalOpen.set(true);
     this.searchQuery.set("");
     this.searchResults.set([]);
-    this.isSearchLoading = true;
+    this.isSearchLoading.set(true);
     this.document.body.style.overflow = "hidden";
 
     try {
       this.searchResults.set(await this.loadSearchResultsForCurrentRoute());
     } finally {
-      this.isSearchLoading = false;
+      this.isSearchLoading.set(false);
     }
   }
 
   protected closeSearchModal(): void {
-    this.isSearchModalOpen = false;
+    this.isSearchModalOpen.set(false);
     this.searchQuery.set("");
     this.searchResults.set([]);
     this.syncBodyOverflow();
@@ -161,20 +158,20 @@ export class SiteNavbar {
   }
 
   protected openMobilePanel(panel: string): void {
-    this.activeMobilePanel = panel;
+    this.activeMobilePanel.set(panel);
   }
 
   protected goToRootPanel(): void {
-    this.activeMobilePanel = "root";
+    this.activeMobilePanel.set("root");
   }
 
   protected getMobilePanelOffset(): string {
-    if (this.activeMobilePanel === "root") {
+    if (this.activeMobilePanel() === "root") {
       return "0%";
     }
 
     const panelIndex = this.mobilePanels().findIndex(
-      (panel) => panel === this.activeMobilePanel,
+      (panel) => panel === this.activeMobilePanel(),
     );
 
     const totalPanels = this.mobilePanels().length + 1;
@@ -192,7 +189,7 @@ export class SiteNavbar {
 
   @HostListener("window:scroll")
   protected onWindowScroll(): void {
-    this.isScrolled = window.scrollY > 50;
+    this.isScrolled.set(window.scrollY > 50);
     this.updateNavbarDockState();
   }
 
@@ -204,26 +201,25 @@ export class SiteNavbar {
 
   @HostListener("document:keydown.escape")
   protected onEscape(): void {
-    if (this.isSearchModalOpen) {
+    if (this.isSearchModalOpen()) {
       this.closeSearchModal();
     }
   }
 
   private updateNavbarMeasurements(): void {
-    this.navbarSpacerHeight =
-      this.navbarShellRef?.nativeElement.offsetHeight ?? 0;
+    this.navbarSpacerHeight.set(this.navbarShellRef?.nativeElement.offsetHeight ?? 0);
   }
 
   private updateNavbarDockState(): void {
     const topBarHeight = this.topBarRef?.nativeElement.offsetHeight ?? 0;
 
-    this.isNavbarDocked = window.scrollY >= topBarHeight;
+    this.isNavbarDocked.set(window.scrollY >= topBarHeight);
 
     this.updateNavbarMeasurements();
   }
 
   private syncBodyOverflow(): void {
-    this.document.body.style.overflow = this.isSearchModalOpen ? "hidden" : "";
+    this.document.body.style.overflow = this.isSearchModalOpen() ? "hidden" : "";
   }
 
   private async loadSearchResultsForCurrentRoute(): Promise<SearchResult[]> {
