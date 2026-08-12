@@ -61,7 +61,7 @@ export class ProductDetailsPageComponent {
               data: product,
               message: product
                 ? ""
-                : "The product you requested could not be found.",
+                : "The product you requested could not be found here.",
             }) satisfies RequestState<ProductDetails | null>,
         ),
         catchError(() =>
@@ -241,5 +241,4 @@ export class ProductDetailsPageComponent {
       .replace(/[-_]+/g, " ")
       .replace(/\b\w/g, (character) => character.toUpperCase());
   }
-
 }
