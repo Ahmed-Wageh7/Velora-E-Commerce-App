@@ -249,7 +249,7 @@
                 type="button"
                 class="purchase-button action-button"
                 [class.is-loading]="isAddingToCart()"
-                [disabled]="isAddingToCart || product.quantity <= 0"
+                [disabled]="isAddingToCart() || product.quantity <= 0"
                 (click)="addToCart(product)"
               >
                 <span class="action-button-label">
