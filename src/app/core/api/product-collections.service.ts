@@ -143,15 +143,10 @@ export class ProductCollectionsService {
     options?: ExtractProductsOptions,
   ): Observable<ApiProductRecord[]> {
     return requestPage(1).pipe(
-      tap((response) => {
-        console.log("PAGE 1 RESPONSE:", response);
-      }),
+      tap((response) => {}),
       switchMap((firstResponse) => {
         const firstPageProducts = extractProducts(firstResponse, options);
         const totalPages = this.getTotalPages(firstResponse);
-
-        console.log("PRODUCTS:", firstPageProducts.length);
-        console.log("TOTAL PAGES:", totalPages);
 
         if (totalPages <= 1) {
           return of(firstPageProducts);
@@ -163,9 +158,7 @@ export class ProductCollectionsService {
         );
 
         return forkJoin(remainingRequests).pipe(
-          tap((responses) => {
-            console.log("ALL PAGES FINISHED:", responses.length);
-          }),
+          tap((responses) => {}),
           map((responses) =>
             this.mergeProducts([
               firstPageProducts,
