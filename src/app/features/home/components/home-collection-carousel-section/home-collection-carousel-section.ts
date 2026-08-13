@@ -13,10 +13,10 @@ import {
 import { isPlatformBrowser } from "@angular/common";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { RouterLink } from "@angular/router";
-import { switchMap } from "rxjs";
+import { of, switchMap } from "rxjs";
+import { ProductListingService } from "../../../../core/api/product-listing.service";
 import { CartAnimationService } from "../../../../core/cart/cart-animation.service";
 import { CartService } from "../../../../core/cart/cart.service";
-import { ProductListingService } from "../../../../core/api/product-listing.service";
 import { ToastService } from "../../../../core/notifications/toast.service";
 import { toRequestState } from "../../../../core/utils/request-state";
 import { ProductListItem } from "../../../../models/product/product-list-item.model";
@@ -32,42 +32,51 @@ export class HomeCollectionCarouselSectionComponent
   implements AfterViewInit, OnDestroy
 {
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly productListingService = inject(
-    ProductListingService,
-  );
+  private readonly productListingService = inject(ProductListingService);
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
+
   private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
   private autoScrollIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  @ViewChild("viewport") private viewportRef?: ElementRef<HTMLElement>;
+  @ViewChild("viewport")
+  private viewportRef?: ElementRef<HTMLElement>;
 
   readonly bannerImage = input.required<string>();
   readonly bannerAlt = input.required<string>();
   readonly title = input.required<string>();
   readonly targetRoute = input.required<string>();
   readonly collectionFolder = input.required<string>();
-  readonly subcategoryId = input.required<string>();
+  readonly subcategoryId = input<string | null>(null);
   readonly uniformImageFill = input(false);
   readonly uniformBannerFrame = input(false);
 
   protected readonly productsState = toSignal(
-    toObservable(computed(() => this.subcategoryId())).pipe(
-      switchMap((subcategoryId) =>
-        toRequestState(
-          this.productListingService.getProductsBySubcategory(
-            subcategoryId,
-            { fetchAllPages: true, includeDeleted: true },
-          ),
+    toObservable(this.subcategoryId).pipe(
+      switchMap((subcategoryId) => {
+        if (!subcategoryId?.trim()) {
+          return toRequestState(of([] as ProductListItem[]), {
+            initialData: [] as ProductListItem[],
+            loadingMessage: "Loading products...",
+            emptyMessage: "No products are available right now.",
+            errorMessage: "We could not load this collection right now.",
+          });
+        }
+
+        return toRequestState(
+          this.productListingService.getProductsBySubcategory(subcategoryId, {
+            fetchAllPages: true,
+            includeDeleted: true,
+          }),
           {
             initialData: [] as ProductListItem[],
             loadingMessage: "Loading products...",
             emptyMessage: "No products are available right now.",
             errorMessage: "We could not load this collection right now.",
           },
-        ),
-      ),
+        );
+      }),
     ),
     {
       initialValue: {
@@ -77,6 +86,8 @@ export class HomeCollectionCarouselSectionComponent
       },
     },
   );
+
+  protected readonly products = computed(() => this.productsState().data);
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -132,6 +143,7 @@ export class HomeCollectionCarouselSectionComponent
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
+
     this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
@@ -165,7 +177,9 @@ export class HomeCollectionCarouselSectionComponent
     } finally {
       this.loadingProductIds.update((ids) => {
         const nextIds = new Set(ids);
+
         nextIds.delete(product.id);
+
         return nextIds;
       });
     }
@@ -180,6 +194,7 @@ export class HomeCollectionCarouselSectionComponent
 
     this.autoScrollIntervalId = setInterval(() => {
       const viewport = this.viewportRef?.nativeElement;
+
       const firstCard = viewport?.querySelector(
         ".home-collection-card",
       ) as HTMLElement | null;
@@ -200,6 +215,7 @@ export class HomeCollectionCarouselSectionComponent
 
       const cardWidth = firstCard.offsetWidth;
       const gap = 24;
+
       const nextScrollLeft = viewport.scrollLeft + cardWidth + gap;
 
       if (nextScrollLeft >= maxScrollLeft - 8) {
@@ -207,6 +223,7 @@ export class HomeCollectionCarouselSectionComponent
           left: 0,
           behavior: "smooth",
         });
+
         return;
       }
 
@@ -216,5 +233,4 @@ export class HomeCollectionCarouselSectionComponent
       });
     }, 6000);
   }
-
 }

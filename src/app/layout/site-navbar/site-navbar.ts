@@ -12,18 +12,14 @@ import {
 } from "@angular/core";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router, RouterLink } from "@angular/router";
-import { firstValueFrom, filter } from "rxjs";
+import { firstValueFrom, forkJoin, of } from "rxjs";
+import { catchError, filter, map, switchMap } from "rxjs/operators";
 import { AuthService } from "../../core/auth/auth.service";
-import { ArtDedicationService } from "../../core/api/art-dedication.service";
 import { CartService } from "../../core/cart/cart.service";
-import { CareProductsService } from "../../core/api/care-products.service";
-import { FragrancesService } from "../../core/api/fragrances.service";
 import { ProductListingService } from "../../core/api/product-listing.service";
-import { PromiseHomeProductsService } from "../../core/api/promise-home-products.service";
 import { TaxonomyService } from "../../core/api/taxonomy.service";
 import { SearchResult } from "../../models/navigation/search-result.model";
 import { ProductListItem } from "../../models/product/product-list-item.model";
-import { TaxonomyApiCategory, TaxonomyApiSubcategory } from "../../models/taxonomy/taxonomy.model";
 
 @Component({
   selector: "app-site-navbar",
@@ -37,12 +33,6 @@ export class SiteNavbar {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly productListingService = inject(ProductListingService);
-  private readonly careProductsService = inject(CareProductsService);
-  private readonly fragrancesService = inject(FragrancesService);
-  private readonly artDedicationService = inject(ArtDedicationService);
-  private readonly promiseHomeProductsService = inject(
-    PromiseHomeProductsService,
-  );
   private readonly cartService = inject(CartService);
   private readonly taxonomyService = inject(TaxonomyService);
 
@@ -78,6 +68,9 @@ export class SiteNavbar {
 
   protected readonly searchQuery = signal("");
   protected readonly searchResults = signal<SearchResult[]>([]);
+  protected readonly isSearchLoadingState = computed(() =>
+    this.isSearchLoading(),
+  );
 
   private readonly searchCatalogCache = new Map<string, SearchResult[]>();
 
@@ -208,7 +201,9 @@ export class SiteNavbar {
   }
 
   private updateNavbarMeasurements(): void {
-    this.navbarSpacerHeight.set(this.navbarShellRef?.nativeElement.offsetHeight ?? 0);
+    this.navbarSpacerHeight.set(
+      this.navbarShellRef?.nativeElement.offsetHeight ?? 0,
+    );
   }
 
   private updateNavbarDockState(): void {
@@ -220,12 +215,15 @@ export class SiteNavbar {
   }
 
   private syncBodyOverflow(): void {
-    this.document.body.style.overflow = this.isSearchModalOpen() ? "hidden" : "";
+    this.document.body.style.overflow = this.isSearchModalOpen()
+      ? "hidden"
+      : "";
   }
 
   private async loadSearchResultsForCurrentRoute(): Promise<SearchResult[]> {
     const url = this.router.url;
     const cacheKey = url || "/";
+
     const cached = this.searchCatalogCache.get(cacheKey);
 
     if (cached) {
@@ -240,8 +238,6 @@ export class SiteNavbar {
       results = await this.loadCollectionResultsForUrl(url);
     } else if (url.startsWith("/category/")) {
       results = await this.loadCategoryResultsForUrl(url);
-    } else if (url === "/care-products") {
-      results = await this.loadCareResults();
     } else {
       results = await this.loadHomeSearchResults();
     }
@@ -249,6 +245,29 @@ export class SiteNavbar {
     this.searchCatalogCache.set(cacheKey, results);
 
     return results;
+  }
+
+  private async loadCollectionResultsForUrl(
+    url: string,
+  ): Promise<SearchResult[]> {
+    const [, , subcategoryId] = url.split("/");
+
+    if (!subcategoryId) {
+      return [];
+    }
+
+    const metadata = await firstValueFrom(
+      this.taxonomyService.findSubcategoryById(subcategoryId),
+    );
+
+    if (!metadata) {
+      return [];
+    }
+
+    return this.loadSubcategoryResults(
+      subcategoryId,
+      metadata.subcategory.name,
+    );
   }
 
   private async loadSubcategoryResults(
@@ -265,26 +284,13 @@ export class SiteNavbar {
     return this.toSearchResults(products, collectionLabel);
   }
 
-  private async loadCollectionResultsForUrl(url: string): Promise<SearchResult[]> {
-    const [, , firstSegment, secondSegment] = url.split("/");
-
-    if (firstSegment && /^[a-f0-9]{24}$/i.test(firstSegment)) {
-      const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryById(firstSegment));
-      return this.loadSubcategoryResults(firstSegment, metadata?.subcategory.name ?? this.toLabelFromSlug(secondSegment ?? firstSegment));
-    }
-
-    const metadata = await this.findSubcategoryBySlugCandidates(firstSegment ?? "");
-
-    return metadata
-      ? this.loadSubcategoryResults(metadata.subcategory._id ?? metadata.subcategory.id ?? "", metadata.subcategory.name)
-      : this.loadHomeSearchResults();
-  }
-
-  private async loadCategoryResultsForUrl(url: string): Promise<SearchResult[]> {
+  private async loadCategoryResultsForUrl(
+    url: string,
+  ): Promise<SearchResult[]> {
     const [, , categoryId, slug] = url.split("/");
 
     if (!categoryId) {
-      return this.loadHomeSearchResults();
+      return [];
     }
 
     const products = await firstValueFrom(
@@ -294,98 +300,57 @@ export class SiteNavbar {
       }),
     );
 
-    return this.toSearchResults(products, this.toLabelFromSlug(slug ?? "Category"));
-  }
-
-  private async loadCareResults(): Promise<SearchResult[]> {
-    const products = await firstValueFrom(
-      this.careProductsService.getCareProducts(),
+    return this.toSearchResults(
+      products,
+      this.toLabelFromSlug(slug ?? "Category"),
     );
-
-    return products.map((product) => ({
-      id: `care-${product.id}`,
-      name: product.name,
-      subtitle: "Care product",
-      collectionLabel: "Care Products",
-      imageUrl: product.primaryImageUrl,
-      route: ["/product", product.id],
-    }));
   }
 
   private async loadHomeSearchResults(): Promise<SearchResult[]> {
-    const [fragrances, artProducts, topacoProducts, promiseProducts] =
-      await Promise.all([
-        firstValueFrom(this.fragrancesService.getFragrances()),
-        firstValueFrom(this.artDedicationService.getArtDedicationProducts()),
-        this.loadSubcategoryProductsBySlug("category-topaco"),
-        firstValueFrom(this.promiseHomeProductsService.getProducts()),
-      ]);
+    const [fragrances, artProducts, promiseProducts] = await Promise.all([
+      this.loadProductsBySubcategorySlug("fragrances"),
+      this.loadProductsBySubcategorySlug("The-Art-Dedication"),
+      this.loadProductsBySubcategorySlug("promise-bags"),
+    ]);
 
     return [
-      ...fragrances.map((product) => ({
-        id: `fragrances-${product.id}`,
-        name: product.name,
-        subtitle: product.detail || product.badge || "Fragrance",
-        collectionLabel: "Fragrances",
-        imageUrl: product.imageUrl,
-        route: ["/product", product.id],
-      })),
-      ...artProducts.map((product) => ({
-        id: `art-${product.id}`,
-        name: product.name,
-        subtitle: product.subtitle || "The Art of Dedication",
-        collectionLabel: "The Art of Dedication",
-        imageUrl: product.imageUrl,
-        route: ["/product", product.id],
-      })),
-      ...topacoProducts.map((product) => ({
-        id: `topaco-${product.id}`,
-        name: product.name,
-        subtitle: "Topaco Collection",
-        collectionLabel: "Topaco Collection",
-        imageUrl: product.primaryImageUrl,
-        route: ["/product", product.id],
-      })),
-      ...promiseProducts.map((product) => ({
-        id: `promise-${product.id}`,
-        name: product.name,
-        subtitle: product.detail || "Promise Bags",
-        collectionLabel: "Promise Bags",
-        imageUrl: product.imageUrl,
-        route: ["/product", product.id],
-      })),
+      ...this.toHomeSearchResults(fragrances, "Fragrances"),
+
+      ...this.toHomeSearchResults(artProducts, "The Art of Dedication"),
+
+      ...this.toHomeSearchResults(promiseProducts, "Promise Bags"),
     ];
   }
 
-  private async loadSubcategoryProductsBySlug(slug: string): Promise<ProductListItem[]> {
-    const metadata = await this.findSubcategoryBySlugCandidates(slug);
-    const subcategoryId = metadata?.subcategory._id ?? metadata?.subcategory.id ?? "";
-
-    return subcategoryId
-      ? firstValueFrom(this.productListingService.getProductsBySubcategory(subcategoryId, {
-          includeDeleted: true,
-          fetchAllPages: true,
-        }))
-      : [];
-  }
-
-  private async findSubcategoryBySlugCandidates(
+  private async loadProductsBySubcategorySlug(
     slug: string,
-  ): Promise<{ category: TaxonomyApiCategory; subcategory: TaxonomyApiSubcategory } | null> {
-    const candidates = SLUG_LOOKUP_ALIASES[slug] ?? [slug];
+  ): Promise<ProductListItem[]> {
+    const match = await firstValueFrom(
+      this.taxonomyService
+        .findSubcategoryBySlug(slug)
+        .pipe(catchError(() => of(null))),
+    );
 
-    for (const candidate of candidates) {
-      const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryBySlug(candidate));
+    const subcategoryId = match?.subcategory?._id;
 
-      if (metadata) {
-        return metadata;
-      }
+    if (!subcategoryId) {
+      return [];
     }
 
-    return null;
+    return firstValueFrom(
+      this.productListingService
+        .getProductsBySubcategory(subcategoryId, {
+          includeDeleted: true,
+          fetchAllPages: true,
+        })
+        .pipe(catchError(() => of([] as ProductListItem[]))),
+    );
   }
 
-  private toSearchResults(products: ProductListItem[], collectionLabel: string): SearchResult[] {
+  private toHomeSearchResults(
+    products: ProductListItem[],
+    collectionLabel: string,
+  ): SearchResult[] {
     return products.map((product) => ({
       id: `${collectionLabel}-${product.id}`,
       name: product.name,
@@ -396,8 +361,18 @@ export class SiteNavbar {
     }));
   }
 
-  private toLabelFromUrl(url: string): string {
-    return this.toLabelFromSlug(url.split("/").filter(Boolean).at(-1) ?? "Collection");
+  private toSearchResults(
+    products: ProductListItem[],
+    collectionLabel: string,
+  ): SearchResult[] {
+    return products.map((product) => ({
+      id: `${collectionLabel}-${product.id}`,
+      name: product.name,
+      subtitle: collectionLabel,
+      collectionLabel,
+      imageUrl: product.primaryImageUrl,
+      route: ["/product", product.id],
+    }));
   }
 
   private toLabelFromSlug(slug: string): string {
@@ -406,8 +381,3 @@ export class SiteNavbar {
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 }
-
-const SLUG_LOOKUP_ALIASES: Record<string, string[]> = {
-  "pink-wild": ["pink-wild", "pink-collection"],
-  "category-topaco": ["category-topaco", "topaco", "tobacco"],
-};

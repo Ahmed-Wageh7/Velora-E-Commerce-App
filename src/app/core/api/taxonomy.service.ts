@@ -47,9 +47,7 @@ export class TaxonomyService {
     return `/collections/${subcategoryId}/${this.getEntitySlug(subcategory)}`;
   }
 
-  findSubcategoryById(
-    subcategoryId: string,
-  ): Observable<{
+  findSubcategoryById(subcategoryId: string): Observable<{
     category: TaxonomyApiCategory;
     subcategory: TaxonomyApiSubcategory;
   } | null> {
@@ -65,15 +63,12 @@ export class TaxonomyService {
             return { category, subcategory };
           }
         }
-
         return null;
       }),
     );
   }
 
-  findSubcategoryBySlug(
-    slug: string,
-  ): Observable<{
+  findSubcategoryBySlug(slug: string): Observable<{
     category: TaxonomyApiCategory;
     subcategory: TaxonomyApiSubcategory;
   } | null> {
@@ -201,7 +196,7 @@ export class TaxonomyService {
   }
 
   private toBrandLabel(value: string): string {
-    return value.replace(/assaf/gi, "Veloura").replace(/عساف/g, "Veloura");
+    return value.replace(/assaf/gi, "Veloura").replace(/عساف/g, "ڤيولرا");
   }
 
   private sortNavItems(items: NavLinkItem[]): NavLinkItem[] {
