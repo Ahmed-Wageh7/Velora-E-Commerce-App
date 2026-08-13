@@ -182,21 +182,31 @@ export class ProductCollectionsService {
   // private getTotalPages(response: ApiProductsListResponse): number {
   //   const pages = response.pagination?.pages ?? response.pages;
 
-  //   if (typeof pages === 'number' && pages > 0) {
+  //   if (typeof pages === "number" && pages > 0) {
   //     return pages;
   //   }
 
   //   const total = response.pagination?.total ?? response.total;
   //   const limit = response.pagination?.limit ?? response.limit;
 
-  //   if (typeof total === 'number' && typeof limit === 'number' && limit > 0) {
+  //   if (typeof total === "number" && typeof limit === "number" && limit > 0) {
   //     return Math.ceil(total / limit);
   //   }
 
   //   return 1;
   // }
+  // private getTotalPages(response: ApiProductsListResponse): number {
+  //   return Math.ceil(response.total / response.limit);
+  // }
   private getTotalPages(response: ApiProductsListResponse): number {
-    return Math.ceil(response.total / response.limit);
+    const total = response.total;
+    const limit = response.limit;
+
+    if (typeof total === "number" && typeof limit === "number" && limit > 0) {
+      return Math.ceil(total / limit);
+    }
+
+    return 1;
   }
   private mergeProducts(
     productPages: ApiProductRecord[][],
