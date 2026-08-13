@@ -1,5 +1,3 @@
-import { ApiImageValue } from './product-api.model';
-
 export interface Product {
   id: string;
   detailProductId?: string;
@@ -9,7 +7,7 @@ export interface Product {
   quantity?: number;
   description: string;
   image: string;
-  images?: ApiImageValue[] | ApiImageValue;
+  images?: string[];
   primaryImage?: string;
   coverImage?: string;
   cornerImage?: string;

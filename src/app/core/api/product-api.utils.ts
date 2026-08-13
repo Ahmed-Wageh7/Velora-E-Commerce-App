@@ -2,7 +2,6 @@ import { environment } from "../../../environments/environment";
 import { ApiResponseEnvelope } from "../../models/common/api-response.model";
 import {
   ApiCategoryRef,
-  ApiImageValue,
   ApiProductRecord,
   ApiProductsListResponse,
   ExtractProductsOptions,
@@ -44,8 +43,29 @@ export function buildProductsBySubcategoryUrl(
   return `${apiBaseUrl}/products/subcategory/${subcategoryId}?page=${page}&limit=${limit}`;
 }
 
-export function buildMediaUrl(value: ApiImageValue): string {
-  const rawValue = getRawImageValue(value);
+// export function buildMediaUrl(value: ApiImageValue): string {
+//   const rawValue = getRawImageValue(value);
+
+//   if (!rawValue) {
+//     return "";
+//   }
+
+//   if (
+//     /^(https?:)?\/\//i.test(rawValue) ||
+//     rawValue.startsWith("data:") ||
+//     rawValue.startsWith("blob:")
+//   ) {
+//     return rawValue;
+//   }
+
+//   if (rawValue.startsWith("/")) {
+//     return rawValue;
+//   }
+
+//   return `${apiBaseUrl}/${rawValue.replace(/^\/+/, "")}`;
+// }
+export function buildMediaUrl(value?: string | null): string {
+  const rawValue = value?.trim() ?? "";
 
   if (!rawValue) {
     return "";
@@ -62,13 +82,15 @@ export function buildMediaUrl(value: ApiImageValue): string {
   if (rawValue.startsWith("/")) {
     return rawValue;
   }
-
   return `${apiBaseUrl}/${rawValue.replace(/^\/+/, "")}`;
 }
 
+// export function getProductId(product: ApiProductRecord): string {
+//   const value = product.id ?? product._id ?? 0;
+//   return String(value);
+// }
 export function getProductId(product: ApiProductRecord): string {
-  const value = product.id ?? product._id ?? 0;
-  return String(value);
+  return product._id ?? "";
 }
 
 export function getProductQuantity(product: ApiProductRecord): number {
@@ -79,9 +101,12 @@ export function getProductOriginalPrice(product: ApiProductRecord): number {
   return product.price;
 }
 
+// export function getPrimaryImageUrl(product: ApiProductRecord): string {
+//   const images = normalizeImages(product.images);
+//   return buildMediaUrl(images[0]);
+// }
 export function getPrimaryImageUrl(product: ApiProductRecord): string {
-  const images = normalizeImages(product.images);
-  return buildMediaUrl(images[0]);
+  return buildMediaUrl(product.images?.[0]);
 }
 
 export function getHoverImageUrl(product: ApiProductRecord): string {
@@ -101,10 +126,18 @@ export function getCornerImageUrl(
   return undefined;
 }
 
+// export function getGalleryImageUrls(product: ApiProductRecord): string[] {
+//   const urls = [
+//     getPrimaryImageUrl(product),
+//     ...normalizeImages(product.images).map((image) => buildMediaUrl(image)),
+//     getCoverImageUrl(product) ?? "",
+//   ].filter(Boolean);
+
+//   return Array.from(new Set(urls));
+// }
 export function getGalleryImageUrls(product: ApiProductRecord): string[] {
   const urls = [
-    getPrimaryImageUrl(product),
-    ...normalizeImages(product.images).map((image) => buildMediaUrl(image)),
+    ...(product.images ?? []).map((image) => buildMediaUrl(image)),
     getCoverImageUrl(product) ?? "",
   ].filter(Boolean);
 
@@ -123,74 +156,102 @@ export function extractApiData<T>(response: ApiResponseEnvelope<T> | T): T {
   return response as T;
 }
 
+// export function extractProducts(
+//   response: ApiProductsListResponse | ApiProductRecord[],
+//   options?: ExtractProductsOptions,
+// ): ApiProductRecord[] {
+//   const includeDeleted = options?.includeDeleted ?? false;
+//   const filterProducts = (products: ApiProductRecord[] | null | undefined): ApiProductRecord[] =>
+//     Array.isArray(products)
+//       ? products.filter((product) => includeDeleted || !product.isDeleted)
+//       : [];
+
+//   if (Array.isArray(response)) {
+//     return filterProducts(response);
+//   }
+
+//   if (Array.isArray(response.products)) {
+//     return filterProducts(response.products);
+//   }
+
+//   const data = extractApiData<
+//     ApiProductRecord[] | { products?: ApiProductRecord[] | null } | null | undefined
+//   >(
+//     response as ApiProductsListResponse,
+//   );
+
+//   if (Array.isArray(data)) {
+//     return filterProducts(data);
+//   }
+
+//   if (data && typeof data === 'object' && 'products' in data) {
+//     return filterProducts(data.products);
+//   }
+
+//   return [];
+// }
 export function extractProducts(
-  response: ApiProductsListResponse | ApiProductRecord[],
+  response: ApiProductsListResponse,
   options?: ExtractProductsOptions,
 ): ApiProductRecord[] {
   const includeDeleted = options?.includeDeleted ?? false;
-  const filterProducts = (products: ApiProductRecord[] | null | undefined): ApiProductRecord[] =>
-    Array.isArray(products)
-      ? products.filter((product) => includeDeleted || !product.isDeleted)
-      : [];
 
-  if (Array.isArray(response)) {
-    return filterProducts(response);
-  }
-
-  if (Array.isArray(response.products)) {
-    return filterProducts(response.products);
-  }
-
-  const data = extractApiData<
-    ApiProductRecord[] | { products?: ApiProductRecord[] | null } | null | undefined
-  >(
-    response as ApiProductsListResponse,
+  return response.products.filter(
+    (product) => includeDeleted || !product.isDeleted,
   );
-
-  if (Array.isArray(data)) {
-    return filterProducts(data);
-  }
-
-  if (data && typeof data === 'object' && 'products' in data) {
-    return filterProducts(data.products);
-  }
-
-  return [];
 }
+
+// export function extractCategories(
+//   response: TaxonomyApiResponse | TaxonomyApiCategory[],
+// ): TaxonomyApiCategory[] {
+//   if (Array.isArray(response)) {
+//     return response;
+//   }
+
+//   if (Array.isArray(response.categories)) {
+//     return response.categories;
+//   }
+
+//   const data = extractApiData<TaxonomyApiCategory[] | null | undefined>(
+//     response,
+//   );
+//   return Array.isArray(data) ? data : [];
+// }
 
 export function extractCategories(
-  response: TaxonomyApiResponse | TaxonomyApiCategory[],
+  response: TaxonomyApiResponse,
 ): TaxonomyApiCategory[] {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (Array.isArray(response.categories)) {
-    return response.categories;
-  }
-
-  const data = extractApiData<TaxonomyApiCategory[] | null | undefined>(response);
-  return Array.isArray(data) ? data : [];
+  return response.categories ?? [];
 }
+// function normalizeImages(images: ApiProductRecord["images"]): ApiImageValue[] {
+//   if (!images) {
+//     return [];
+//   }
 
-function normalizeImages(images: ApiProductRecord["images"]): ApiImageValue[] {
-  if (!images) {
-    return [];
-  }
+//   return Array.isArray(images) ? images : [images];
+// }
 
-  return Array.isArray(images) ? images : [images];
-}
+// function getRawImageValue(value: ApiImageValue): string {
+//   if (!value) {
+//     return "";
+//   }
 
-function getRawImageValue(value: ApiImageValue): string {
-  if (!value) {
-    return "";
-  }
+//   if (typeof value === "string") {
+//     return value.trim();
+//   }
 
-  if (typeof value === "string") {
-    return value.trim();
-  }
+//   return String(
+//     value.url ?? value.imageUrl ?? value.src ?? value.path ?? "",
+//   ).trim();
+// }
+// function normalizeImages(images: ApiProductRecord["images"]): ApiImageValue[] {
+//   if (!images) {
+//     return [];
+//   }
 
-  return String(
-    value.url ?? value.imageUrl ?? value.src ?? value.path ?? "",
-  ).trim();
-}
+//   return Array.isArray(images) ? images : [images];
+// }
+
+// function getRawImageValue(value: ApiImageValue): string {
+//   return typeof value === "string" ? value : "";
+// }
