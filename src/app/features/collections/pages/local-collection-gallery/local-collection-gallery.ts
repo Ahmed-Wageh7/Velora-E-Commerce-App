@@ -35,27 +35,44 @@ export class LocalCollectionGalleryPageComponent {
   private readonly cartAnimationService = inject(CartAnimationService);
   private readonly cartService = inject(CartService);
   private readonly toastService = inject(ToastService);
+
   private readonly pageSize = 12;
+
   private readonly loadingProductIds = signal<ReadonlySet<string>>(new Set());
+
   private readonly routeSlug = toSignal(
     this.route.paramMap.pipe(map((params) => params.get("slug") ?? "")),
-    { initialValue: this.route.snapshot.paramMap.get("slug") ?? "" },
+    {
+      initialValue: this.route.snapshot.paramMap.get("slug") ?? "",
+    },
   );
+
   private readonly routeSubcategoryId = toSignal(
     this.route.paramMap.pipe(
       map((params) => params.get("subcategoryId") ?? ""),
     ),
-    { initialValue: this.route.snapshot.paramMap.get("subcategoryId") ?? "" },
+    {
+      initialValue: this.route.snapshot.paramMap.get("subcategoryId") ?? "",
+    },
   );
+
   private readonly routeCategoryId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get("categoryId") ?? "")),
-    { initialValue: this.route.snapshot.paramMap.get("categoryId") ?? "" },
+    {
+      initialValue: this.route.snapshot.paramMap.get("categoryId") ?? "",
+    },
   );
+
   private readonly localCollectionKey = computed(() =>
     this.getLocalCollectionKey(this.routeSlug()),
   );
 
+  private readonly localCollectionConfig = computed(() => {
+    return LOCAL_COLLECTIONS[this.localCollectionKey()] ?? null;
+  });
+
   protected readonly sortOptions = PRODUCT_SORT_OPTIONS;
+
   private readonly apiCollection = toSignal(
     this.route.paramMap.pipe(
       switchMap((params) => {
@@ -64,76 +81,84 @@ export class LocalCollectionGalleryPageComponent {
         const categoryId = params.get("categoryId") ?? "";
 
         if (categoryId) {
-          return this.taxonomyService
-            .findCategoryById(categoryId)
-            .pipe(
-              map((category) =>
-                category
-                  ? this.toCollectionConfig(category.name, routeSlug)
-                  : this.toCollectionConfig(
-                      this.toTitleFromSlug(routeSlug || "category"),
-                      routeSlug,
-                    ),
-              ),
-            );
+          return this.taxonomyService.findCategoryById(categoryId).pipe(
+            map((category) => {
+              if (!category) {
+                return null;
+              }
+
+              return this.toCollectionConfig(
+                category.name,
+                routeSlug || this.toEntitySlug(category),
+              );
+            }),
+          );
         }
 
-        return this.taxonomyService
-          .findSubcategoryById(subcategoryId)
-          .pipe(
-            map((metadata) =>
-              metadata
-                ? this.toCollectionConfig(metadata.subcategory.name, routeSlug)
-                : this.toCollectionConfig(
-                    this.toTitleFromSlug(routeSlug || "collection"),
-                    routeSlug,
-                  ),
-            ),
+        if (subcategoryId) {
+          return this.taxonomyService.findSubcategoryById(subcategoryId).pipe(
+            map((metadata) => {
+              if (!metadata) {
+                return null;
+              }
+
+              return this.toCollectionConfig(
+                metadata.subcategory.name,
+                routeSlug || this.toEntitySlug(metadata.subcategory),
+              );
+            }),
           );
+        }
+
+        return of(null);
       }),
       startWith(null as LocalCollectionPageConfig | null),
     ),
-    { initialValue: null },
+    {
+      initialValue: null,
+    },
   );
+
   protected readonly collection = computed(() => {
     const routeSlug = this.routeSlug();
-    const localCollection = this.getLocalCollection(routeSlug);
     const apiCollection = this.apiCollection();
+    const localConfig = this.localCollectionConfig();
 
-    if (localCollection || apiCollection) {
-      return {
-        ...(apiCollection ??
-          this.toCollectionConfig(this.toTitleFromSlug(routeSlug), routeSlug)),
-        ...(localCollection ?? {}),
-        title:
-          apiCollection?.title ??
-          localCollection?.title ??
-          this.toTitleFromSlug(routeSlug),
-      };
+    if (!routeSlug && !apiCollection) {
+      return null;
     }
 
-    if (routeSlug || this.routeSubcategoryId() || this.routeCategoryId()) {
-      return this.toCollectionConfig(
+    const baseCollection =
+      apiCollection ??
+      this.toCollectionConfig(
         this.toTitleFromSlug(routeSlug || "collection"),
         routeSlug,
       );
-    }
 
-    return null;
+    return {
+      ...baseCollection,
+      ...(localConfig ?? {}),
+      title: baseCollection.title,
+    };
   });
+
   protected readonly selectedSort = signal<string>(this.sortOptions[0]);
+
   protected readonly visibleCount = signal(this.pageSize);
+
   protected readonly isShowingMore = signal(false);
+
   protected readonly heroImageUrl = computed(
     () => this.collection()?.heroImageFile ?? null,
   );
+
   private readonly productsState = toSignal(
     this.route.paramMap.pipe(
       switchMap((params) => {
         const subcategoryId = params.get("subcategoryId") ?? "";
         const categoryId = params.get("categoryId") ?? "";
-        const routeSlug = params.get("slug") ?? "";
-        const localCollection = this.getLocalCollection(routeSlug);
+
+        const localConfig = this.localCollectionConfig();
 
         if (categoryId) {
           return toRequestState(
@@ -154,10 +179,10 @@ export class LocalCollectionGalleryPageComponent {
           return toRequestState(
             this.productListingService
               .getProductsBySubcategory(subcategoryId, {
-                includeDeleted: localCollection?.includeDeletedProducts ?? true,
-                fetchAllPages: localCollection?.fetchAllPages ?? true,
+                includeDeleted: localConfig?.includeDeletedProducts ?? true,
+                fetchAllPages: localConfig?.fetchAllPages ?? true,
               })
-              .pipe(delay(localCollection?.minimumLoadingMs ?? 0)),
+              .pipe(delay(localConfig?.minimumLoadingMs ?? 0)),
             {
               initialData: [] as ProductListItem[],
               loadingMessage: "Loading products...",
@@ -182,6 +207,7 @@ export class LocalCollectionGalleryPageComponent {
       } satisfies RequestState<ProductListItem[]>,
     },
   );
+
   protected readonly collectionState = computed(() => {
     if (
       !this.collection() &&
@@ -197,18 +223,22 @@ export class LocalCollectionGalleryPageComponent {
 
     return this.productsState();
   });
-  protected readonly products = computed(() => {
-    return sortProducts(this.collectionState().data, this.selectedSort()).slice(
+
+  protected readonly products = computed(() =>
+    sortProducts(this.collectionState().data, this.selectedSort()).slice(
       0,
       this.visibleCount(),
-    );
-  });
+    ),
+  );
+
   protected readonly totalProducts = computed(
     () => this.collectionState().data.length,
   );
+
   protected readonly isNewCovenantPage = computed(
     () => this.localCollectionKey() === "the-new-covenant-2026",
   );
+
   protected readonly hideTopHero = computed(() =>
     [
       "the-new-covenant-2026",
@@ -220,11 +250,14 @@ export class LocalCollectionGalleryPageComponent {
       "perfumers-choices",
       "niche-group",
       "wild-colt",
+      "wild-colt-collection",
     ].includes(this.localCollectionKey()),
   );
+
   protected readonly newCovenantFirstProduct = computed(() =>
     this.isNewCovenantPage() ? (this.products()[0] ?? null) : null,
   );
+
   protected readonly newCovenantRemainingProducts = computed(() =>
     this.isNewCovenantPage() ? this.products().slice(1) : this.products(),
   );
@@ -238,6 +271,7 @@ export class LocalCollectionGalleryPageComponent {
           ? `Perfumes | ${currentCollection.title} | Veloura`
           : "Perfumes | Collection | Veloura",
       );
+
       this.selectedSort.set(this.sortOptions[0]);
       this.visibleCount.set(this.pageSize);
     });
@@ -256,6 +290,7 @@ export class LocalCollectionGalleryPageComponent {
 
     window.setTimeout(() => {
       this.visibleCount.update((current) => current + this.pageSize);
+
       this.isShowingMore.set(false);
     }, 240);
   }
@@ -296,6 +331,7 @@ export class LocalCollectionGalleryPageComponent {
     }
 
     const trigger = event.currentTarget as HTMLElement | null;
+
     this.loadingProductIds.update((ids) => new Set(ids).add(product.id));
 
     try {
@@ -319,6 +355,7 @@ export class LocalCollectionGalleryPageComponent {
           product.primaryImageUrl,
         ),
       ]);
+
       this.toastService.showAddedToCart({
         name: product.name,
         image: product.primaryImageUrl,
@@ -328,7 +365,9 @@ export class LocalCollectionGalleryPageComponent {
     } finally {
       this.loadingProductIds.update((ids) => {
         const nextIds = new Set(ids);
+
         nextIds.delete(product.id);
+
         return nextIds;
       });
     }
@@ -336,29 +375,36 @@ export class LocalCollectionGalleryPageComponent {
 
   private toCollectionConfig(
     title: string,
-    folder: string,
+    slug: string,
   ): LocalCollectionPageConfig {
+    const localConfig = this.localCollectionConfig();
+
     return {
       title: this.toBrandLabel(title),
-      folder,
-      imageFiles: [],
+      folder: slug,
       products: [],
-      includeDeletedProducts: true,
-      fetchAllPages: true,
+      heroImageFile: localConfig?.heroImageFile,
+      imageFiles: localConfig?.imageFiles ?? [],
+      includeDeletedProducts: localConfig?.includeDeletedProducts ?? true,
+      fetchAllPages: localConfig?.fetchAllPages ?? true,
+      minimumLoadingMs: localConfig?.minimumLoadingMs ?? 0,
     };
   }
-
-  private getLocalCollection(
-    routeSlug: string,
-  ): LocalCollectionPageConfig | null {
-    const configKey = this.getLocalCollectionKey(routeSlug);
-    return LOCAL_COLLECTIONS[configKey] ?? null;
-  }
-
   private getLocalCollectionKey(routeSlug: string): string {
     return LOCAL_COLLECTION_CONFIG_ALIASES[routeSlug] ?? routeSlug;
   }
+  private toEntitySlug(entity: { name: string; slug?: string }): string {
+    return entity.slug ?? this.toTitleSlug(entity.name);
+  }
 
+  private toTitleSlug(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/['’]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
   private toTitleFromSlug(slug: string): string {
     return slug
       .replace(/-/g, " ")
@@ -366,6 +412,6 @@ export class LocalCollectionGalleryPageComponent {
   }
 
   private toBrandLabel(value: string): string {
-    return value.replace(/assaf/gi, "Veloura").replace(/عساف/g, "Veloura");
+    return value.replace(/assaf/gi, "Veloura").replace(/عساف/g, "ڤيولرا");
   }
 }
