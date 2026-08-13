@@ -1,25 +1,35 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, shareReplay } from 'rxjs';
-import { buildCategoriesUrl, extractCategories } from './product-api.utils';
-import { TaxonomyApiResponse } from '../../models/product/product-api.model';
-import { NavLinkItem, TaxonomyApiCategory, TaxonomyApiSubcategory } from '../../models/taxonomy/taxonomy.model';
+import { HttpClient } from "@angular/common/http";
+import { Injectable, inject } from "@angular/core";
+import { Observable, catchError, map, of, shareReplay } from "rxjs";
+import { buildCategoriesUrl, extractCategories } from "./product-api.utils";
+import { TaxonomyApiResponse } from "../../models/product/product-api.model";
+import {
+  NavLinkItem,
+  TaxonomyApiCategory,
+  TaxonomyApiSubcategory,
+} from "../../models/taxonomy/taxonomy.model";
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root",
 })
 export class TaxonomyService {
   private readonly http = inject(HttpClient);
 
-  private readonly categories$: Observable<TaxonomyApiCategory[]> = this.http.get<TaxonomyApiResponse>(buildCategoriesUrl()).pipe(
-    map((response) => extractCategories(response)),
-    catchError(() => of([] as TaxonomyApiCategory[])),
-    shareReplay(1),
-  );
+  private readonly categories$: Observable<TaxonomyApiCategory[]> = this.http
+    .get<TaxonomyApiResponse>(buildCategoriesUrl())
+    .pipe(
+      map((response) => extractCategories(response)),
+      catchError(() => of([] as TaxonomyApiCategory[])),
+      shareReplay(1),
+    );
 
   private readonly navItems$ = this.categories$.pipe(
     map((categories) =>
-      this.sortNavItems(categories.map((category) => this.toNavLinkItem(category)).filter((item): item is NavLinkItem => item !== null)),
+      this.sortNavItems(
+        categories
+          .map((category) => this.toNavLinkItem(category))
+          .filter((item): item is NavLinkItem => item !== null),
+      ),
     ),
     shareReplay(1),
   );
@@ -33,15 +43,23 @@ export class TaxonomyService {
   }
 
   getSubcategoryRoute(subcategory: TaxonomyApiSubcategory): string {
-    const subcategoryId = subcategory._id ?? subcategory.id ?? '';
+    const subcategoryId = subcategory._id ?? subcategory.id ?? "";
     return `/collections/${subcategoryId}/${this.getEntitySlug(subcategory)}`;
   }
 
-  findSubcategoryById(subcategoryId: string): Observable<{ category: TaxonomyApiCategory; subcategory: TaxonomyApiSubcategory } | null> {
+  findSubcategoryById(
+    subcategoryId: string,
+  ): Observable<{
+    category: TaxonomyApiCategory;
+    subcategory: TaxonomyApiSubcategory;
+  } | null> {
     return this.categories$.pipe(
       map((categories) => {
         for (const category of categories) {
-          const subcategory = (category.subcategories ?? []).find((item: TaxonomyApiSubcategory) => (item._id ?? item.id) === subcategoryId);
+          const subcategory = (category.subcategories ?? []).find(
+            (item: TaxonomyApiSubcategory) =>
+              (item._id ?? item.id) === subcategoryId,
+          );
 
           if (subcategory) {
             return { category, subcategory };
@@ -53,13 +71,21 @@ export class TaxonomyService {
     );
   }
 
-  findSubcategoryBySlug(slug: string): Observable<{ category: TaxonomyApiCategory; subcategory: TaxonomyApiSubcategory } | null> {
+  findSubcategoryBySlug(
+    slug: string,
+  ): Observable<{
+    category: TaxonomyApiCategory;
+    subcategory: TaxonomyApiSubcategory;
+  } | null> {
     const normalizedSlug = this.normalizeSlug(slug);
 
     return this.categories$.pipe(
       map((categories) => {
         for (const category of categories) {
-          const subcategory = (category.subcategories ?? []).find((item: TaxonomyApiSubcategory) => this.getEntitySlug(item) === normalizedSlug);
+          const subcategory = (category.subcategories ?? []).find(
+            (item: TaxonomyApiSubcategory) =>
+              this.getEntitySlug(item) === normalizedSlug,
+          );
 
           if (subcategory) {
             return { category, subcategory };
@@ -73,7 +99,12 @@ export class TaxonomyService {
 
   findCategoryById(categoryId: string): Observable<TaxonomyApiCategory | null> {
     return this.categories$.pipe(
-      map((categories) => categories.find((category) => (category._id ?? category.id) === categoryId) ?? null),
+      map(
+        (categories) =>
+          categories.find(
+            (category) => (category._id ?? category.id) === categoryId,
+          ) ?? null,
+      ),
     );
   }
 
@@ -81,7 +112,12 @@ export class TaxonomyService {
     const normalizedSlug = this.normalizeSlug(slug);
 
     return this.categories$.pipe(
-      map((categories) => categories.find((category) => this.getEntitySlug(category) === normalizedSlug) ?? null),
+      map(
+        (categories) =>
+          categories.find(
+            (category) => this.getEntitySlug(category) === normalizedSlug,
+          ) ?? null,
+      ),
     );
   }
 
@@ -90,12 +126,16 @@ export class TaxonomyService {
     const label = this.toBrandLabel(rawLabel);
     const slug = this.getEntitySlug(category);
 
-    if (slug === 'home') {
+    if (slug === "home") {
       return null;
     }
 
     const categoryId = category._id ?? category.id ?? slug;
-    const children = this.getNavChildren(rawLabel, categoryId, category.subcategories ?? []);
+    const children = this.getNavChildren(
+      rawLabel,
+      categoryId,
+      category.subcategories ?? [],
+    );
 
     return {
       id: categoryId,
@@ -113,21 +153,30 @@ export class TaxonomyService {
     subcategories: TaxonomyApiSubcategory[],
   ): NavLinkItem[] {
     return subcategories
-      .filter((subcategory) => this.slugify(subcategory.name) !== 'home')
-      .map((subcategory) => this.toSubcategoryNavLinkItem(categoryName, categoryId, subcategory));
+      .filter((subcategory) => this.slugify(subcategory.name) !== "home")
+      .map((subcategory) =>
+        this.toSubcategoryNavLinkItem(categoryName, categoryId, subcategory),
+      );
   }
 
-  private toSubcategoryNavLinkItem(parentCategoryName: string, parentCategoryId: string, subcategory: TaxonomyApiSubcategory): NavLinkItem {
+  private toSubcategoryNavLinkItem(
+    parentCategoryName: string,
+    parentCategoryId: string,
+    subcategory: TaxonomyApiSubcategory,
+  ): NavLinkItem {
     const rawLabel = subcategory.name.trim();
     const label = this.toBrandLabel(rawLabel);
     const slug = this.getEntitySlug(subcategory);
 
     return {
-      id: subcategory._id ?? subcategory.id ?? `${this.slugify(parentCategoryName)}-${slug}`,
+      id:
+        subcategory._id ??
+        subcategory.id ??
+        `${this.slugify(parentCategoryName)}-${slug}`,
       label,
       slug,
       categoryId: subcategory.category || parentCategoryId,
-      subcategoryId: subcategory._id ?? subcategory.id ?? '',
+      subcategoryId: subcategory._id ?? subcategory.id ?? "",
       route: this.getSubcategoryRoute(subcategory),
       children: [],
     };
@@ -137,10 +186,10 @@ export class TaxonomyService {
     return value
       .toLowerCase()
       .trim()
-      .replace(/['’]/g, '')
-      .replace(/&/g, ' and ')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/['’]/g, "")
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
   private getEntitySlug(entity: { name: string; slug?: string }): string {
@@ -152,7 +201,7 @@ export class TaxonomyService {
   }
 
   private toBrandLabel(value: string): string {
-    return value.replace(/assaf/gi, 'Veloura').replace(/عساف/g, 'Veloura');
+    return value.replace(/assaf/gi, "Veloura").replace(/عساف/g, "Veloura");
   }
 
   private sortNavItems(items: NavLinkItem[]): NavLinkItem[] {
@@ -170,16 +219,16 @@ export class TaxonomyService {
 }
 
 const NAV_ITEM_ORDER: Record<string, number> = {
-  'buy-2-get-third-free': 1,
-  'buy-1-get-two-free': 2,
-  'assaf-discounts': 3,
-  'veloura-discounts': 3,
-  'perfumes': 4,
-  'assaf-watches': 5,
-  'veloura-watches': 5,
-  'care-products': 6,
-  'assaf-sunglasses': 7,
-  'veloura-sunglasses': 7,
-  'assaf-bags': 8,
-  'veloura-bags': 8,
+  "buy-2-get-third-free": 1,
+  "buy-1-get-two-free": 2,
+  "assaf-discounts": 3,
+  "veloura-discounts": 3,
+  perfumes: 4,
+  "assaf-watches": 5,
+  "veloura-watches": 5,
+  "care-products": 6,
+  "assaf-sunglasses": 7,
+  "veloura-sunglasses": 7,
+  "assaf-bags": 8,
+  "veloura-bags": 8,
 };

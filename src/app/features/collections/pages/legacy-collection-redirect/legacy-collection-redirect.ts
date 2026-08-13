@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EMPTY, from } from 'rxjs';
 import { catchError, concatMap, defaultIfEmpty, filter, map, take } from 'rxjs/operators';
 import { TaxonomyService } from '../../../../core/api/taxonomy.service';
+import { LEGACY_COLLECTION_ROUTE_ALIASES } from '../../data/collection-route-aliases';
 
 @Component({
   selector: 'app-legacy-collection-redirect',
@@ -16,9 +17,11 @@ export class LegacyCollectionRedirectComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    const slugCandidates = this.route.snapshot.data['subcategorySlugCandidates'] as string[] | undefined;
+    const routeSlug = this.route.snapshot.paramMap.get('slug') ?? (this.route.snapshot.data['legacyCollectionSlug'] as string | undefined);
+    const dataCandidates = this.route.snapshot.data['subcategorySlugCandidates'] as string[] | undefined;
+    const slugCandidates = dataCandidates ?? (routeSlug ? LEGACY_COLLECTION_ROUTE_ALIASES[routeSlug] ?? [routeSlug] : []);
 
-    from(slugCandidates ?? [])
+    from(slugCandidates)
       .pipe(
         concatMap((slug) =>
           this.taxonomyService.findSubcategoryBySlug(slug).pipe(

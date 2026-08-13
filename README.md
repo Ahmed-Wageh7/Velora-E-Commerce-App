@@ -184,7 +184,7 @@ This app is suitable for deployment on Vercel or any platform that supports Angu
 
 ## Resume / Portfolio Summary
 
-Built an Angular 21 storefront with SSR-ready architecture, reusable standalone components, backend API product integration, persistent cart state, feature-based code organization, and resilient loading/error handling across product-driven pages.
+Built an Angular 22 storefront with SSR-ready architecture, reusable standalone components, backend API product integration, persistent cart state, feature-based code organization, and resilient loading/error handling across product-driven pages.
 
 ## License
 
