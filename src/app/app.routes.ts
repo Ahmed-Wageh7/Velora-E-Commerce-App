@@ -73,25 +73,28 @@ export const routes: Routes = [
   {
     path: "collections/arrogate",
     loadComponent: () =>
-      import("./features/collections/pages/arrogate-collection/arrogate-collection").then(
-        (module) => module.ArrogateCollectionPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["arrogate", "arrogate-collection"] },
     title: "Perfumes | Arrogate | Veloura",
   },
   {
     path: "collections/frankel",
     loadComponent: () =>
-      import("./features/collections/pages/frankel-collection/frankel-collection").then(
-        (module) => module.FrankelCollectionPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["frankel", "category-frankel", "frankel-collection"] },
     title: "Perfumes | Frankel | Veloura",
   },
   {
     path: "collections/pink-wild",
     loadComponent: () =>
-      import("./features/collections/pages/pink-collection/pink-collection").then(
-        (module) => module.PinkCollectionPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["pink-wild", "pink-collection"] },
     title: "Perfumes | Pink Wild | Veloura",
   },
   {
@@ -105,81 +108,91 @@ export const routes: Routes = [
   {
     path: "watches/classic",
     loadComponent: () =>
-      import("./features/collections/pages/classic-watches/classic-watches").then(
-        (module) => module.ClassicWatchesPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["classic-watches", "classic"] },
     title: "Veloura Watches | Classic Watches",
   },
   {
     path: "watches/sport",
     loadComponent: () =>
-      import("./features/collections/pages/sport-watches/sport-watches").then(
-        (module) => module.SportWatchesPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["sport-watches", "sports-watches", "sport"] },
     title: "Veloura Watches | Sports Watches",
   },
   {
     path: "watches/women",
     loadComponent: () =>
-      import("./features/collections/pages/women-watches/women-watches").then(
-        (module) => module.WomenWatchesPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["women-watches", "womens-watches"] },
     title: "Veloura Watches | Women’s Watches",
   },
   {
     path: "bags/women",
     loadComponent: () =>
-      import("./features/collections/pages/women-bags/women-bags").then(
-        (module) => module.WomenBagsPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["women-bags", "womens-bags"] },
     title: "Veloura Bags | Women",
   },
   {
     path: "bags/children",
     loadComponent: () =>
-      import("./features/collections/pages/children-bags/children-bags").then(
-        (module) => module.ChildrenBagsPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["children-bags", "children"] },
     title: "Veloura Bags | Children",
   },
   {
     path: "bags/promise",
     loadComponent: () =>
-      import("./features/collections/pages/promise-bags/promise-bags").then(
-        (module) => module.PromiseBagsPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["promise-bags", "promise"] },
     title: "Veloura Bags | حقيبة برومس",
   },
   {
     path: "sunglasses/men",
     loadComponent: () =>
-      import("./features/collections/pages/men-sunglasses/men-sunglasses").then(
-        (module) => module.MenSunglassesPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["men-sunglasses", "mens-sunglasses"] },
     title: "Veloura Sunglasses | Men’s Sunglasses",
   },
   {
     path: "sunglasses/women",
     loadComponent: () =>
-      import("./features/collections/pages/women-sunglasses/women-sunglasses").then(
-        (module) => module.WomenSunglassesPageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["women-sunglasses", "womens-sunglasses"] },
     title: "Veloura Sunglasses | Women’s Sunglasses",
   },
   {
     path: "offers/buy-1-get-2-free",
     loadComponent: () =>
-      import("./features/collections/pages/buy-one-get-two-free/buy-one-get-two-free").then(
-        (module) => module.BuyOneGetTwoFreePageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["buy-1-get-2-free", "buy-1-get-two-free", "buy-one-get-two-free", "buy-one-get2-free"] },
     title: "Buy 1 Get Two Free",
   },
   {
     path: "offers/buy-2-get-third-free",
     loadComponent: () =>
-      import("./features/collections/pages/buy-two-get-third-free/buy-two-get-third-free").then(
-        (module) => module.BuyTwoGetThirdFreePageComponent,
+      import("./features/collections/pages/legacy-collection-redirect/legacy-collection-redirect").then(
+        (module) => module.LegacyCollectionRedirectComponent,
       ),
+    data: { subcategorySlugCandidates: ["buy-2-get-third-free", "buy-two-get-third-free"] },
     title: "Buy 2 Get Third Free",
   },
   {

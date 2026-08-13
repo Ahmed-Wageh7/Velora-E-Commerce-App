@@ -59,7 +59,7 @@ export class LocalCollectionGalleryPageComponent {
             map((category) =>
               category
                 ? this.toCollectionConfig(category.name, currentCollection?.folder ?? slug)
-                : null,
+                : this.toCollectionConfig(this.toTitleFromSlug(slug || 'category'), currentCollection?.folder ?? slug),
             ),
           );
         }
@@ -72,7 +72,9 @@ export class LocalCollectionGalleryPageComponent {
           map((metadata) =>
             metadata
               ? this.toCollectionConfig(metadata.subcategory.name, currentCollection?.folder ?? slug)
-              : null,
+              : subcategoryId
+                ? this.toCollectionConfig(this.toTitleFromSlug(slug || 'collection'), currentCollection?.folder ?? slug)
+                : null,
           ),
         );
       }),
@@ -125,11 +127,22 @@ export class LocalCollectionGalleryPageComponent {
           );
         }
 
-        const metadata$ = subcategoryId
-          ? this.taxonomyService.findSubcategoryById(subcategoryId)
-          : this.taxonomyService.findSubcategoryBySlug(currentCollection?.folder ?? slug);
+        if (subcategoryId) {
+          return toRequestState(
+            this.productListingService.getProductsBySubcategory(subcategoryId, {
+              includeDeleted: currentCollection?.includeDeletedProducts ?? true,
+              fetchAllPages: currentCollection?.fetchAllPages ?? true,
+            }).pipe(delay(currentCollection?.minimumLoadingMs ?? 0)),
+            {
+              initialData: [] as ProductListItem[],
+              loadingMessage: 'Loading products...',
+              emptyMessage: 'No products are available in this collection yet.',
+              errorMessage: 'We could not load this collection right now.',
+            },
+          );
+        }
 
-        return metadata$.pipe(
+        return this.taxonomyService.findSubcategoryBySlug(currentCollection?.folder ?? slug).pipe(
           switchMap((metadata) => {
             const resolvedSubcategoryId = metadata?.subcategory._id ?? metadata?.subcategory.id ?? '';
 

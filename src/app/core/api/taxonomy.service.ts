@@ -34,7 +34,7 @@ export class TaxonomyService {
 
   getSubcategoryRoute(subcategory: TaxonomyApiSubcategory): string {
     const subcategoryId = subcategory._id ?? subcategory.id ?? '';
-    return `/collections/${subcategoryId}/${this.slugify(subcategory.name)}`;
+    return `/collections/${subcategoryId}/${this.getEntitySlug(subcategory)}`;
   }
 
   findSubcategoryById(subcategoryId: string): Observable<{ category: TaxonomyApiCategory; subcategory: TaxonomyApiSubcategory } | null> {
@@ -54,12 +54,12 @@ export class TaxonomyService {
   }
 
   findSubcategoryBySlug(slug: string): Observable<{ category: TaxonomyApiCategory; subcategory: TaxonomyApiSubcategory } | null> {
-    const normalizedSlug = this.slugify(slug);
+    const normalizedSlug = this.normalizeSlug(slug);
 
     return this.categories$.pipe(
       map((categories) => {
         for (const category of categories) {
-          const subcategory = (category.subcategories ?? []).find((item: TaxonomyApiSubcategory) => this.slugify(item.name) === normalizedSlug);
+          const subcategory = (category.subcategories ?? []).find((item: TaxonomyApiSubcategory) => this.getEntitySlug(item) === normalizedSlug);
 
           if (subcategory) {
             return { category, subcategory };
@@ -78,17 +78,17 @@ export class TaxonomyService {
   }
 
   findCategoryBySlug(slug: string): Observable<TaxonomyApiCategory | null> {
-    const normalizedSlug = this.slugify(slug);
+    const normalizedSlug = this.normalizeSlug(slug);
 
     return this.categories$.pipe(
-      map((categories) => categories.find((category) => this.slugify(category.name) === normalizedSlug) ?? null),
+      map((categories) => categories.find((category) => this.getEntitySlug(category) === normalizedSlug) ?? null),
     );
   }
 
   private toNavLinkItem(category: TaxonomyApiCategory): NavLinkItem | null {
     const rawLabel = category.name.trim();
     const label = this.toBrandLabel(rawLabel);
-    const slug = this.slugify(rawLabel);
+    const slug = this.getEntitySlug(category);
 
     if (slug === 'home') {
       return null;
@@ -120,7 +120,7 @@ export class TaxonomyService {
   private toSubcategoryNavLinkItem(parentCategoryName: string, parentCategoryId: string, subcategory: TaxonomyApiSubcategory): NavLinkItem {
     const rawLabel = subcategory.name.trim();
     const label = this.toBrandLabel(rawLabel);
-    const slug = this.slugify(rawLabel);
+    const slug = this.getEntitySlug(subcategory);
 
     return {
       id: subcategory._id ?? subcategory.id ?? `${this.slugify(parentCategoryName)}-${slug}`,
@@ -141,6 +141,14 @@ export class TaxonomyService {
       .replace(/&/g, ' and ')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  private getEntitySlug(entity: { name: string; slug?: string }): string {
+    return this.normalizeSlug(entity.slug || entity.name);
+  }
+
+  private normalizeSlug(value: string): string {
+    return this.slugify(value);
   }
 
   private toBrandLabel(value: string): string {

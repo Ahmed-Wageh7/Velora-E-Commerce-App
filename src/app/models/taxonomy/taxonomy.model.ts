@@ -2,6 +2,7 @@ export interface TaxonomyApiCategory {
   _id?: string;
   id?: string;
   name: string;
+  slug?: string;
   description?: string;
   subcategories?: TaxonomyApiSubcategory[];
   isDeleted?: boolean;
@@ -11,6 +12,7 @@ export interface TaxonomyApiSubcategory {
   _id?: string;
   id?: string;
   name: string;
+  slug?: string;
   description?: string;
   category?: string;
   isDeleted?: boolean;

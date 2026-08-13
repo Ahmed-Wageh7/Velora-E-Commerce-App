@@ -23,6 +23,7 @@ import { PromiseHomeProductsService } from "../../core/api/promise-home-products
 import { TaxonomyService } from "../../core/api/taxonomy.service";
 import { SearchResult } from "../../models/navigation/search-result.model";
 import { ProductListItem } from "../../models/product/product-list-item.model";
+import { TaxonomyApiCategory, TaxonomyApiSubcategory } from "../../models/taxonomy/taxonomy.model";
 
 @Component({
   selector: "app-site-navbar",
@@ -239,11 +240,6 @@ export class SiteNavbar {
       results = await this.loadCollectionResultsForUrl(url);
     } else if (url.startsWith("/category/")) {
       results = await this.loadCategoryResultsForUrl(url);
-    } else if (LEGACY_ROUTE_SUBCATEGORY_IDS[url]) {
-      results = await this.loadSubcategoryResults(
-        LEGACY_ROUTE_SUBCATEGORY_IDS[url],
-        this.toLabelFromUrl(url),
-      );
     } else if (url === "/care-products") {
       results = await this.loadCareResults();
     } else {
@@ -271,18 +267,13 @@ export class SiteNavbar {
 
   private async loadCollectionResultsForUrl(url: string): Promise<SearchResult[]> {
     const [, , firstSegment, secondSegment] = url.split("/");
-    const legacySubcategoryId = LEGACY_COLLECTION_SLUG_SUBCATEGORY_IDS[firstSegment ?? ""];
-
-    if (legacySubcategoryId) {
-      return this.loadSubcategoryResults(legacySubcategoryId, this.toLabelFromSlug(secondSegment ?? firstSegment ?? "Collection"));
-    }
 
     if (firstSegment && /^[a-f0-9]{24}$/i.test(firstSegment)) {
       const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryById(firstSegment));
       return this.loadSubcategoryResults(firstSegment, metadata?.subcategory.name ?? this.toLabelFromSlug(secondSegment ?? firstSegment));
     }
 
-    const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryBySlug(firstSegment ?? ""));
+    const metadata = await this.findSubcategoryBySlugCandidates(firstSegment ?? "");
 
     return metadata
       ? this.loadSubcategoryResults(metadata.subcategory._id ?? metadata.subcategory.id ?? "", metadata.subcategory.name)
@@ -367,7 +358,7 @@ export class SiteNavbar {
   }
 
   private async loadSubcategoryProductsBySlug(slug: string): Promise<ProductListItem[]> {
-    const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryBySlug(slug));
+    const metadata = await this.findSubcategoryBySlugCandidates(slug);
     const subcategoryId = metadata?.subcategory._id ?? metadata?.subcategory.id ?? "";
 
     return subcategoryId
@@ -376,6 +367,22 @@ export class SiteNavbar {
           fetchAllPages: true,
         }))
       : [];
+  }
+
+  private async findSubcategoryBySlugCandidates(
+    slug: string,
+  ): Promise<{ category: TaxonomyApiCategory; subcategory: TaxonomyApiSubcategory } | null> {
+    const candidates = SLUG_LOOKUP_ALIASES[slug] ?? [slug];
+
+    for (const candidate of candidates) {
+      const metadata = await firstValueFrom(this.taxonomyService.findSubcategoryBySlug(candidate));
+
+      if (metadata) {
+        return metadata;
+      }
+    }
+
+    return null;
   }
 
   private toSearchResults(products: ProductListItem[], collectionLabel: string): SearchResult[] {
@@ -400,21 +407,7 @@ export class SiteNavbar {
   }
 }
 
-const LEGACY_ROUTE_SUBCATEGORY_IDS: Record<string, string> = {
-  "/collections/arrogate": "69d50edf9e39253830600b30",
-  "/collections/frankel": "69d506d49e39253830600ace",
-  "/watches/classic": "69d4fe2a9e39253830600a71",
-  "/watches/sport": "69d4fe2b9e39253830600a73",
-  "/watches/women": "69d4fe2a9e39253830600a72",
-  "/bags/women": "69d4fe299e39253830600a6e",
-  "/bags/children": "69d4fe299e39253830600a6f",
-  "/bags/promise": "69d4fe299e39253830600a70",
-  "/sunglasses/men": "69d4fe289e39253830600a6d",
-  "/sunglasses/women": "69d4fe289e39253830600a6c",
-  "/offers/buy-1-get-2-free": "69d9151a9e392538306047eb",
-  "/offers/buy-2-get-third-free": "69d915199e392538306047ea",
-};
-
-const LEGACY_COLLECTION_SLUG_SUBCATEGORY_IDS: Record<string, string> = {
-  "pink-wild": "69d506d49e39253830600acf",
+const SLUG_LOOKUP_ALIASES: Record<string, string[]> = {
+  "pink-wild": ["pink-wild", "pink-collection"],
+  "category-topaco": ["category-topaco", "topaco", "tobacco"],
 };
