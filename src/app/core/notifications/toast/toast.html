@@ -47,11 +47,9 @@
       <div class="toast-card__cart-grid">
         <div class="toast-card__cart-content">
           <p class="toast-card__cart-name">{{ toast.product.name }}</p>
-
           @if (toast.product.price !== undefined) {
           <p class="toast-card__cart-price">{{ toast.product.price }} ﷼</p>
           }
-
           <p class="toast-card__cart-meta">SIZE: L</p>
           <p class="toast-card__cart-meta">
             QTY: {{ toast.product.quantity ?? 1 }}
@@ -87,7 +85,6 @@
         >
           View cart
         </a>
-
         <a
           routerLink="/checkout"
           fragment="summary"
@@ -133,7 +130,6 @@
       <div class="toast-card__copy">
         <p class="toast-card__line">
           <span class="toast-card__title">{{ toast.title }}</span>
-
           @if (toast.message) {
           <span class="toast-card__message">{{ toast.message }}</span>
           }

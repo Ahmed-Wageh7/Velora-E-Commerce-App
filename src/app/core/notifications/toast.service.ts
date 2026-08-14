@@ -83,7 +83,6 @@ export class ToastService {
     }
 
     const id = ++this.nextId;
-
     const toast: ToastMessage = {
       id,
       title,
