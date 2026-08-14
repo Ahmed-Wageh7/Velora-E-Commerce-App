@@ -7,25 +7,24 @@
   top: 46px;
   right: 0;
   z-index: 9999;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: min(92vw, 440px);
-  pointer-events: none;
 }
 
 .toast-card {
+  pointer-events: none;
   position: relative;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(40, 40, 40, 0.12);
   opacity: 0;
   transform: translate3d(20px, 0, 0) scale(0.97);
   transition:
     opacity 0.28s ease,
     transform 0.28s ease;
-  pointer-events: none;
 }
 
 .toast-card.is-visible {
@@ -40,8 +39,8 @@
 .toast-card__body {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 16px;
 }
 
 .toast-card__copy {
@@ -49,33 +48,43 @@
   flex: 1;
 }
 
-.toast-card__title {
+.toast-card__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 14px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.toast-card__title {
+  min-width: 0;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .toast-card__message {
-  margin: 3px 0 0;
+  min-width: 0;
+  overflow: hidden;
   font-size: 13px;
   line-height: 1.4;
-  opacity: 0.82;
+  text-overflow: ellipsis;
 }
 
 .toast-card__close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
   background: transparent;
   color: inherit;
-  opacity: 0.55;
+  opacity: 0.72;
   cursor: pointer;
   transition:
     opacity 0.2s ease,
@@ -90,11 +99,11 @@
 
 .toast-card__close:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .toast-card__progress {
-  height: 3px;
+  height: 4px;
   background: rgba(0, 0, 0, 0.06);
 }
 
@@ -120,10 +129,6 @@
   background: #79b783;
 }
 
-.toast-card--success .toast-card__close:hover {
-  background: rgba(63, 127, 72, 0.08);
-}
-
 .toast-card--error {
   border-color: #f0d0cc;
   background: #fdf1ef;
@@ -136,10 +141,6 @@
 
 .toast-card--error .toast-card__progress-bar {
   background: #d98980;
-}
-
-.toast-card--error .toast-card__close:hover {
-  background: rgba(170, 70, 60, 0.08);
 }
 
 .toast-card--info {
@@ -156,14 +157,9 @@
   background: #9eab98;
 }
 
-.toast-card--info .toast-card__close:hover {
-  background: rgba(70, 85, 68, 0.08);
-}
-
 .toast-card--cart {
   max-width: 376px;
   border-color: #e7dfd1;
-  border-radius: 12px;
   background: #fff;
   color: #4a3b1b;
 }
@@ -171,6 +167,11 @@
 .toast-card--cart .toast-card__close,
 .toast-card--cart .toast-card__action {
   pointer-events: auto;
+}
+
+.toast-card--cart .toast-card__body {
+  display: block;
+  padding: 20px 18px 18px;
 }
 
 .toast-card--cart .toast-card__progress {
@@ -181,10 +182,6 @@
 
 .toast-card--cart .toast-card__progress-bar {
   background: linear-gradient(90deg, #b89a56, #8c7340);
-}
-
-.toast-card__cart {
-  padding: 20px 18px 18px;
 }
 
 .toast-card__close--cart {
@@ -211,9 +208,9 @@
 
 .toast-card__cart-title {
   margin: 0;
-  color: #4a3b1b;
   font-size: 16px;
   font-weight: 700;
+  color: #4a3b1b;
 }
 
 .toast-card__cart-badge {
@@ -243,28 +240,29 @@
   flex-direction: column;
   justify-content: center;
   min-width: 0;
-  padding: 6px 0;
-}
-
-.toast-card__cart-name {
-  margin: 0;
-  color: #5a4924;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.45;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .toast-card__cart-price {
   margin: 2px 0 6px;
-  color: #4a3b1b;
   font-size: 1.02rem;
   font-weight: 700;
+  color: #4a3b1b;
+}
+
+.toast-card__cart-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #5a4924;
 }
 
 .toast-card__cart-meta {
   margin: 2px 0 0;
-  color: #927c57;
   font-size: 11px;
+  color: #927c57;
 }
 
 .toast-card__media {
@@ -274,16 +272,16 @@
   width: 6.4rem;
   height: 6.4rem;
   overflow: hidden;
-  border: 1px solid #eadfcb;
   border-radius: 12px;
+  border: 1px solid #eadfcb;
   background: #fbf6ec;
 }
 
 .toast-card__image {
   width: 100%;
   height: 100%;
-  padding: 8px;
   object-fit: contain;
+  padding: 8px;
 }
 
 .toast-card__media-icon {
@@ -307,8 +305,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
   height: 44px;
+  width: 100%;
   padding: 0 14px;
   border: 2px solid #bdb6a8;
   border-radius: 0;

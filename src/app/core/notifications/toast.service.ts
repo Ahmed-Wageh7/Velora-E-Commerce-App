@@ -12,6 +12,7 @@ export class ToastService {
   private nextId = 0;
 
   private readonly toastsSignal = signal<ToastMessage[]>([]);
+  private readonly timer = globalThis.setTimeout.bind(globalThis);
   private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
 
   readonly toasts = this.toastsSignal.asReadonly();
@@ -26,7 +27,7 @@ export class ToastService {
       title,
       message,
       type,
-      duration,
+      duration: this.getDefaultDuration(type, duration),
     });
   }
 
@@ -65,83 +66,9 @@ export class ToastService {
       title,
       message,
       type,
-      duration,
+      duration: this.getDefaultDuration(type, duration),
       replaceGroup: "cart",
     });
-  }
-
-  hide(id: number): void {
-    this.clearTimer(id);
-
-    const toastExists = this.toasts().some((toast) => toast.id === id);
-
-    if (!toastExists) {
-      return;
-    }
-
-    this.toastsSignal.update((toasts) =>
-      toasts.map((toast) =>
-        toast.id === id ? { ...toast, visible: false } : toast,
-      ),
-    );
-
-    setTimeout(() => {
-      this.toastsSignal.update((toasts) =>
-        toasts.filter((toast) => toast.id !== id),
-      );
-    }, 320);
-  }
-
-  pause(id: number): void {
-    const toast = this.toasts().find((item) => item.id === id);
-
-    if (!toast || toast.paused) {
-      return;
-    }
-
-    this.clearTimer(id);
-
-    const elapsed = Date.now() - toast.startedAt;
-    const remaining = Math.max(0, toast.remaining - elapsed);
-
-    this.toastsSignal.update((toasts) =>
-      toasts.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              paused: true,
-              remaining,
-            }
-          : item,
-      ),
-    );
-  }
-
-  resume(id: number): void {
-    const toast = this.toasts().find((item) => item.id === id);
-
-    if (!toast || !toast.paused) {
-      return;
-    }
-
-    if (toast.remaining <= 0) {
-      this.hide(id);
-      return;
-    }
-
-    this.toastsSignal.update((toasts) =>
-      toasts.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              paused: false,
-              startedAt: Date.now(),
-            }
-          : item,
-      ),
-    );
-
-    this.startTimer(id, toast.remaining);
   }
 
   private createToast({
@@ -152,8 +79,8 @@ export class ToastService {
     product,
     replaceGroup,
   }: ToastInput): void {
-    if (replaceGroup) {
-      this.dismissToastGroup(replaceGroup);
+    if (replaceGroup === "cart") {
+      this.dismissActiveCartToastGroup();
     }
 
     const id = ++this.nextId;
@@ -185,42 +112,117 @@ export class ToastService {
     this.startTimer(id, duration);
   }
 
-  private startTimer(id: number, duration: number): void {
-    this.clearTimer(id);
+  hide(id: number): void {
+    const timeoutId = this.timers.get(id);
 
-    const timer = setTimeout(() => {
-      this.hide(id);
-    }, duration);
-
-    this.timers.set(id, timer);
-  }
-
-  private clearTimer(id: number): void {
-    const timer = this.timers.get(id);
-
-    if (!timer) {
-      return;
-    }
-
-    clearTimeout(timer);
-    this.timers.delete(id);
-  }
-
-  private dismissToastGroup(group: string): void {
-    const matchingToasts = this.toasts().filter(
-      (toast) => toast.replaceGroup === group,
-    );
-
-    for (const toast of matchingToasts) {
-      this.clearTimer(toast.id);
-    }
-
-    if (matchingToasts.length === 0) {
-      return;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.timers.delete(id);
     }
 
     this.toastsSignal.update((toasts) =>
-      toasts.filter((toast) => toast.replaceGroup !== group),
+      toasts.map((toast) =>
+        toast.id === id ? { ...toast, visible: false } : toast,
+      ),
+    );
+
+    this.timer(() => {
+      this.toastsSignal.update((toasts) =>
+        toasts.filter((toast) => toast.id !== id),
+      );
+    }, 320);
+  }
+
+  pause(id: number): void {
+    const timeoutId = this.timers.get(id);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.timers.delete(id);
+    }
+
+    this.toastsSignal.update((toasts) =>
+      toasts.map((toast) => {
+        if (toast.id !== id || toast.paused) {
+          return toast;
+        }
+
+        const elapsed = Date.now() - toast.startedAt;
+
+        return {
+          ...toast,
+          paused: true,
+          remaining: Math.max(0, toast.remaining - elapsed),
+        };
+      }),
+    );
+  }
+
+  resume(id: number): void {
+    let remaining = 0;
+
+    this.toastsSignal.update((toasts) =>
+      toasts.map((toast) => {
+        if (toast.id !== id || !toast.paused) {
+          return toast;
+        }
+
+        remaining = toast.remaining;
+
+        return {
+          ...toast,
+          paused: false,
+          startedAt: Date.now(),
+        };
+      }),
+    );
+
+    if (remaining > 0) {
+      this.startTimer(id, remaining);
+    } else {
+      this.hide(id);
+    }
+  }
+
+  private startTimer(id: number, delay: number): void {
+    const timeoutId = this.timer(() => this.hide(id), delay);
+
+    this.timers.set(id, timeoutId);
+  }
+
+  private getDefaultDuration(
+    type: ToastMessage["type"],
+    requestedDuration: number,
+  ): number {
+    if (type === "cart") {
+      return requestedDuration;
+    }
+
+    if (type === "success") {
+      return 2000;
+    }
+
+    return requestedDuration;
+  }
+
+  private dismissActiveCartToastGroup(): void {
+    const activeCartToast = this.toasts().find(
+      (toast) => toast.replaceGroup === "cart",
+    );
+
+    if (!activeCartToast) {
+      return;
+    }
+
+    const timeoutId = this.timers.get(activeCartToast.id);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.timers.delete(activeCartToast.id);
+    }
+
+    this.toastsSignal.update((toasts) =>
+      toasts.filter((toast) => toast.id !== activeCartToast.id),
     );
   }
 }
