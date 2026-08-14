@@ -1,3 +1,11 @@
 :host {
   display: block;
 }
+.cart-fly-image {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  user-select: none;
+  object-fit: contain;
+  will-change: transform, opacity, filter;
+}

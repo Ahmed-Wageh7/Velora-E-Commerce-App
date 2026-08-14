@@ -1,12 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { ToastService } from '../toast.service';
+import { Component, inject } from "@angular/core";
+import { RouterLink } from "@angular/router";
+import { ToastService } from "../toast.service";
 
 @Component({
-  selector: 'app-toast',
+  selector: "app-toast",
   imports: [RouterLink],
-  templateUrl: './toast.html',
-  styleUrls: ['./toast.scss'],
+  templateUrl: "./toast.html",
+  styleUrls: ["./toast.scss"],
 })
 export class ToastComponent {
   protected readonly toastService = inject(ToastService);
