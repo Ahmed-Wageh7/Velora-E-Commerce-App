@@ -10,7 +10,6 @@ import {
 })
 export class ToastService {
   private nextId = 0;
-
   private readonly toastsSignal = signal<ToastMessage[]>([]);
   private readonly timer = globalThis.setTimeout.bind(globalThis);
   private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -45,7 +44,7 @@ export class ToastService {
     });
   }
 
-  showAddedToCart(product: ToastProductPreview, duration = 2000): void {
+  showAddedToCart(product: ToastProductPreview, duration = 1200): void {
     this.createToast({
       title: "Added to cart",
       message: product.name,
@@ -186,7 +185,6 @@ export class ToastService {
 
   private startTimer(id: number, delay: number): void {
     const timeoutId = this.timer(() => this.hide(id), delay);
-
     this.timers.set(id, timeoutId);
   }
 
